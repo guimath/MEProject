@@ -2,6 +2,7 @@
 import pprint # for debug only
 import os
 from pathlib import Path
+import json # to parse config file
 import requests # to get image from the web 
 import shutil # to move file
 import webbrowser # to directly open image in browser
@@ -26,7 +27,7 @@ All_Auto                : True : will try to run fully automaticly. If a file re
 accepted_extensions = [".mp3", ".flac"]
 file_name = ["music.mp3"]
 file_extension = [".mp3"]
-treated_file_nb = ²0
+treated_file_nb = 0
 remaining_file_nb = 0
 file_nb = 1
 
@@ -110,13 +111,17 @@ def main():
     temp=temp[:1]
     path = path+temp
 
-    # getting info from config file :  (TEMPORARY)
-    folder_name = "processed music" 
-    prefered_feat_acronyme = "feat. "
-    default_genre = "Other"           
-    Open_image_auto     = False       
-    Assume_mep_is_right = True        
-    All_Auto            = True    
+    # getting info from config file : 
+    with open("config.json", mode="r") as j_object:
+        data = json.load(j_object)
+
+    folder_name = data["folder_name"] 
+    prefered_feat_acronyme = data["prefered_feat_acronyme"]
+    default_genre = data["default_genre"]          
+    Open_image_auto     = data["Open_image_auto"]       
+    Assume_mep_is_right = data["Assume_mep_is_right"]        
+    All_Auto            = data["All_Auto"]
+        
     while True :
 
         # ------------------------------- #
