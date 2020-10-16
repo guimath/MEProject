@@ -36,6 +36,8 @@ All_Auto = bool
 
 # Stoping program
 def end_prog():
+    global treated_file_nb,file_nb
+    print("{} files correctly processed out of {}".format(treated_file_nb,file_nb))
     sys.exit("bye")
 
 # converting user answer (y or n) into true or false
@@ -59,7 +61,6 @@ def skip_track():
     global file_nb,treated_file_nb,remaining_file_nb
     if remaining_file_nb > 1 :
         file_nb += 1 # file being treated = next in the list
-        treated_file_nb += 1
         remaining_file_nb -= 1 # one file done
     else :
         end_prog()
@@ -115,16 +116,16 @@ def main():
     with open("config.json", mode="r") as j_object:
         data = json.load(j_object)
 
-    folder_name = data["folder_name"] 
     prefered_feat_acronyme = data["prefered_feat_acronyme"]
-    default_genre = data["default_genre"]          
+    default_genre       = data["default_genre"]      
+    folder_name         = data["folder_name"] 
     Open_image_auto     = data["Open_image_auto"]       
     Assume_mep_is_right = data["Assume_mep_is_right"]        
     All_Auto            = data["All_Auto"]
-        
+
     while True :
 
-        # ------------------------------- #
+        # ------------------------------------------------------ #
         # STATE 0 : Scanning of folder
         if state == 0 : 
             # getting the name of the prog
@@ -133,9 +134,9 @@ def main():
             print("\n")
 
             music_file_found = False
-            folder_found = False
-            wrong_format = False
-            #scanning folder
+            folder_found     = False
+            wrong_format     = False
+            # scanning folder
             for temp_file_name in os.listdir(path): 
                 temp, temp_file_extension = os.path.splitext(temp_file_name)
                 if temp_file_extension in accepted_extensions :
@@ -354,10 +355,10 @@ def main():
 
             # input("all done !")
             # switch state
-            if (remaining_file_nb>1) : 
+            treated_file_nb += 1
+            remaining_file_nb -= 1 # one file done
+            if (remaining_file_nb>0) : 
                 file_nb += 1 # file being treated = next in the list
-                treated_file_nb += 1
-                remaining_file_nb -= 1 # one file done
                 state = 1 # get title and artist automatically
             else :
                 end_prog()

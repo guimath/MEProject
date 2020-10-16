@@ -1,8 +1,8 @@
 {
-    "folder_name" : "processed music", 
+    "folder_name"            : "processed music", 
     "prefered_feat_acronyme" : "feat. ",
-    "default_genre" : "Other",           
-    "Open_image_auto"     : false,       
-    "Assume_mep_is_right" : true,        
-    "All_Auto"            : false 
+    "default_genre"          : "Other",           
+    "Open_image_auto"        : false,       
+    "Assume_mep_is_right"    : true,        
+    "All_Auto"               : true 
 }
