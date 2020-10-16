@@ -1,17 +1,26 @@
 # -*-coding:utf-8 -*
-import pprint # for debug only
-import os
+
+import os 
+import sys # to get the name of the prog file
+
+# for file modification
 from pathlib import Path
 import json # to parse config file
-import requests # to get image from the web 
 import shutil # to move file
-import webbrowser # to directly open image in browser
 import eyed3 # music tag editor 
-import sys # to get the name of the prog file
+
+# for image 
+import requests # to get image from the web 
+import webbrowser # to directly open image in browser
+
+# for spotify api 
 import spotipy #Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
                                                            client_secret="ebe33b7ed0cd495a8e91bc4032e9edf2")) #private keys : do not share
+# for debug only
+#import pprint 
+
 
 # modifiable variables in config file
 '''
@@ -24,9 +33,6 @@ All_Auto                : True : will try to run fully automaticly. If a file re
 '''
 
 #global variables
-accepted_extensions = [".mp3", ".flac"]
-file_name = ["music.mp3"]
-file_extension = [".mp3"]
 treated_file_nb = 0
 remaining_file_nb = 0
 file_nb = 1
@@ -96,10 +102,12 @@ def get_file(file_url,filename,path) :
         return 0
 
 def main():
-    global accepted_extensions,treated_file_nb, remaining_file_nb, file_nb, All_Auto
-    accepted_extensions = [".mp3", ".flac"]
+    global treated_file_nb, remaining_file_nb, file_nb, All_Auto
 
     # Variable initialization
+    Is_Sure = True
+    accepted_extensions = [".mp3", ".flac"]
+    file_extension = [".mp3"]
     file_name = ["music.mp3"]
     title = ""
     artist = ""
@@ -110,7 +118,8 @@ def main():
     path = os.path.dirname(os.path.realpath(__file__))
     temp = "\ "
     temp=temp[:1]
-    path = path+temp
+    path = path+temp 
+    eyed3.log.setLevel("ERROR") # hides errors from mp3 data
 
     # getting info from config file : 
     with open("config.json", mode="r") as j_object:
@@ -119,6 +128,7 @@ def main():
     prefered_feat_acronyme = data["prefered_feat_acronyme"]
     default_genre       = data["default_genre"]      
     folder_name         = data["folder_name"] 
+    second_folder_name  = data["second_folder_name"]
     Open_image_auto     = data["Open_image_auto"]       
     Assume_mep_is_right = data["Assume_mep_is_right"]        
     All_Auto            = data["All_Auto"]
@@ -134,7 +144,9 @@ def main():
             print("\n")
 
             music_file_found = False
-            folder_found     = False
+            folder1_found    = False
+            folder2_found    = False
+
             wrong_format     = False
             # scanning folder
             for temp_file_name in os.listdir(path): 
@@ -142,17 +154,24 @@ def main():
                 if temp_file_extension in accepted_extensions :
                     file_name.append(temp_file_name)  
                     file_extension.append(temp_file_extension)
-                    remaining_file_nb+=1
+                    remaining_file_nb += 1
                     music_file_found = True
-                elif temp_file_name== folder_name :
-                    folder_found=True
+
+                elif temp_file_name == folder_name :
+                    folder1_found = True
+
+                elif temp_file_name == second_folder_name :
+                    folder2_found = True
+
                 elif (temp_file_name != prog_name) and (temp_file_extension != "") :
                     wrong_format=True
                     wrong_file_name=temp_file_name
             
             # if there isn't a folder already, creates it
-            if not folder_found :
+            if not folder1_found :
                 os.makedirs(path+folder_name)
+            if not folder2_found :
+                os.makedirs(path+second_folder_name)
 
             # File found ?
             if music_file_found :
@@ -181,6 +200,7 @@ def main():
                     temp_artist = audiofile.tag.artist
                 else : 
                     temp_artist = "not found"
+                    
                 # Displays if at least the title was found
                 print("artist : {}".format(temp_artist))
                 print("title : {}".format(temp_title))
@@ -226,6 +246,7 @@ def main():
             # Can a result be found
             if len(items)>0 :
                 print("\nWe have a match !\n")
+                Is_Sure = True
                 track = items[0]
                 # switch state 
                 state = 4 # user verification (track object and title needed)
@@ -236,13 +257,14 @@ def main():
 
                 items = results['tracks']['items']
                 if len(items)>0 :
+                    Is_Sure = False
                     print("\nexact track not found\n\nPotential track :")
                     track = items[0] 
                     # switch state
                     state = 4 # user verification (track object and title needed)
             
                 # music not found -> switch state
-                if All_Auto :
+                elif All_Auto :
                     skip_track()
                     state = 1 # get title and artist automatically
                     
@@ -268,7 +290,6 @@ def main():
                 track['genres'] = results['genres']
             else :
                 track['genres'] = default_genre
-
             # is there a featured artist ?
             nb_artist = len(track['artists'])   
             if nb_artist == 1 : # no feat
@@ -283,7 +304,7 @@ def main():
                 # 2 feat or more process
                 else:
                     print("{} by {} featuring {} & {}".format(track['name'],track['artists'][0]['name'],track['artists'][1]['name'],track['artists'][2]['name']))  #display
-                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+" & "+['artists'][2]['name']+")"# correct title
+                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+" & "+track['artists'][2]['name']+")"# correct title
             
             # Display info
             print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(track['album']['name'],track['genres'][0],track['album']['release_date'],track['track_number'],track['album']['total_tracks']))
@@ -320,8 +341,8 @@ def main():
             if os.path.exists(temp_path):
                 src = os.path.realpath(temp_path)
                 os.rename(temp_path,new_path)
-                print("new file name : {}".format(new_file_name))
-                print("file {} processed ! {} remaining\n".format(file_nb,remaining_file_nb-1))
+                #print("new file name : {}".format(new_file_name))
+                #print("file {} processed ! {} files remaining\n".format(file_nb,remaining_file_nb-1))
             else :
                 print("error : file missing from directory")
             
@@ -350,7 +371,10 @@ def main():
             audiofile.tag.save()
 
             # moving file and deleting temporary image
-            shutil.move(new_path,path+folder_name)
+            if Is_Sure :
+                shutil.move(new_path,path+folder_name)
+            else : 
+                shutil.move(new_path,path+second_folder_name)
             os.remove(image_path)
 
             # input("all done !")

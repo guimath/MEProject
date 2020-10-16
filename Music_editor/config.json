@@ -1,7 +1,8 @@
 {
     "folder_name"            : "processed music", 
     "prefered_feat_acronyme" : "feat. ",
-    "default_genre"          : "Other",           
+    "default_genre"          : "Other",   
+    "second_folder_name"     : "TBV music",
     "Open_image_auto"        : false,       
     "Assume_mep_is_right"    : true,        
     "All_Auto"               : true 
