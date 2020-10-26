@@ -3,8 +3,8 @@
     "prefered_feat_acronyme" : "feat. ",
     "default_genre"          : "Other",   
     "second_folder_name"     : "TBV music",
-    "Mode_comment"           : "1 is full autp, 2 is semi auto and 3 is discovery",
-    "mode"                   : 1,       
+    "Mode_comment"           : "1 is full auto, 2 is semi auto and 3 is discovery",
+    "mode"                   : 2,       
     "client_id"              : "fb69ab85a5c749e08713458e85754515",
     "client_secret"          : "ebe33b7ed0cd495a8e91bc4032e9edf2"
 }
