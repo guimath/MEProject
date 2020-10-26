@@ -5,7 +5,6 @@
 It will search the music using the spotify api and fill the tags of your files accordingly.  
 It is designed to make downloading music and reorganising your music library easier. 
 
-
 **Required :** To work properly, python V3 is needed. You'll also need a few packages : 
 * `eyed3` : music tag editor
 * `spotipy` : spotify api
