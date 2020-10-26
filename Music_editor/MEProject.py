@@ -2,6 +2,7 @@
 
 import os 
 import sys # to get the name of the prog file
+import time  # for sleep function
 
 # for file modification
 from pathlib import Path
@@ -57,10 +58,11 @@ def question_user(message) :
 # Used if file can't be treated 
 # will start process of the next file if available or end prog
 def skip_track():
-    global file_nb,treated_file_nb,remaining_file_nb
+    global file_nb,treated_file_nb,remaining_file_nb, state
     if remaining_file_nb > 1 :
         file_nb += 1 # file being treated = next in the list
         remaining_file_nb -= 1 # one file done
+        state = 1
     else :
         state = 10
 
@@ -69,7 +71,12 @@ def skip_track():
 # returns corrected title
 def remove_feat(title) :
     if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
-        title, temp = title.split("(")
+        # complicated in case there is anothere paranthesis in the title
+        b = []
+        b = title.split("(")
+        title = b[0]
+        for i in range (1, len(b)-1):
+            title = title + "(" + b[i]
     return title.strip() 
 
 # Downloading picture from specified url as specified filename to specified path
@@ -99,7 +106,7 @@ def main():
 
     # Variable initialization
     Is_Sure = True
-    accepted_extensions = [".mp3", ".flac"]
+    accepted_extensions = [".mp3"]
     file_extension = [".mp3"]
     file_name = ["music.mp3"]
     title = ""
@@ -114,7 +121,7 @@ def main():
     eyed3.log.setLevel("ERROR") # hides errors from mp3 data
 
     # getting info from config file : 
-    with open("config.json", mode="r") as j_object:
+    with open(path+"config.json", mode="r") as j_object:
         config = json.load(j_object)
 
     prefered_feat_acronyme = config["prefered_feat_acronyme"]
@@ -131,6 +138,7 @@ def main():
         Assume_mep_is_right = True
         Open_image_auto = False
     else :
+        config["mode"] = 3
         All_Auto = False
         Assume_mep_is_right = False
         Open_image_auto = True
@@ -138,7 +146,7 @@ def main():
     # Spotify api autorisation 
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id = config["client_id"],
                                                            client_secret = config["client_secret"]))
-
+    print("\n")
     while True :
 
         # ------------------------------------------------------ #
@@ -147,7 +155,7 @@ def main():
             # getting the name of the prog
             prog_name = os.path.abspath(sys.argv[0])
             prog_name = prog_name[len(path):] #removing path from the file name
-            print("\n")
+            
 
             # scanning folder
             music_file_found = False
@@ -189,7 +197,6 @@ def main():
                     print(accepted_extensions[i])
                 state = 10
             else : # no file other than program and directory was found
-                print("error : no music file found")
                 state = 10
 
         # ------------------------------------------------------ #
@@ -271,7 +278,6 @@ def main():
                 # music not found -> switch state
                 elif All_Auto :
                     skip_track()
-                    state = 1 # get title and artist automatically
                     
                 elif question_user("error 808 : music not found... \nDo you want to retry with another spelling ?"):
                     state = 2 # get title and artist manually
@@ -279,11 +285,11 @@ def main():
                 elif question_user("Fill the data manually ?"):
                     print("function under developpement... sorry")
                     skip_track()
-                    state = 1 # get title and artist automatically
                     # TEMPORARY
+                    print(state)
+
                 else:
                     skip_track()
-                    state = 1 # get title and artist automatically
 
         # ------------------------------------------------------ #
         # STATE 4 : User verification (track object and title needed)
@@ -330,7 +336,6 @@ def main():
 
             else : 
                 skip_track()
-                state = 1 # get title and artist automatically
 
     
         # ------------------------------------------------------ #
@@ -339,6 +344,8 @@ def main():
     
             #preparing new file name and directory path
             new_file_name = track['name'] + "_" + track['artists'][0]['name'] + file_extension[file_nb]
+            new_file_name = new_file_name.replace('/',' ')
+
             temp_path = path + file_name[file_nb]
             new_path = path + new_file_name
 
@@ -373,7 +380,7 @@ def main():
 
             # append image to tags
             audiofile.tag.images.set(3,imagedata,"image/jpeg",u"album_artwork")
-            audiofile.tag.save()
+            #audiofile.tag.save()
 
             # moving file and deleting temporary image
             if Is_Sure :
@@ -398,10 +405,11 @@ def main():
 
             if config["mode"] == 2 : 
                 # reset variables
+                time.sleep(1)
                 file_extension = [".mp3"]
                 file_name = ["music.mp3"]
                 treated_file_nb = 0
-                file_nb = 0
+                file_nb = 1
                 remaining_file_nb = 0
                 state = 0
 
