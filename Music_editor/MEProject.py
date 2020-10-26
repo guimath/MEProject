@@ -11,20 +11,19 @@ import eyed3 # music tag editor
 
 # for image 
 import requests # to get image from the web 
-import webbrowser # to directly open image in browser
+import webbrowser # to directly open image in browser 
 
 # for spotify api 
 import spotipy #Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
-                                                           client_secret="ebe33b7ed0cd495a8e91bc4032e9edf2")) #private keys : do not share
+
 # for debug only
 #import pprint 
-
 
 # modifiable variables in config file
 '''
 folder_name             : Name of the folder where all the music will be droped
+second_folder_name      : Name of the folder where the music will be droped if the program is unsure
 prefered_feat_acronyme  : Used when a track has multiple artist. The title will look like : *title_of_track* (*prefered_feat_acronyme* *other artist*)
 default_genre           : If MEP doesn't find a genre this is what will be written in the file
 Open_image_auto         : True : MEP will automatically open the album image in your most recent browser window | False : No image is opened
@@ -36,15 +35,9 @@ All_Auto                : True : will try to run fully automaticly. If a file re
 treated_file_nb = 0
 remaining_file_nb = 0
 file_nb = 1
-
+state = 0
 All_Auto = bool
 
-
-# Stoping program
-def end_prog():
-    global treated_file_nb,file_nb
-    print("{} files correctly processed out of {}".format(treated_file_nb,file_nb))
-    sys.exit("bye")
 
 # converting user answer (y or n) into true or false
 # Special answer : p will end program  (used for debug) 
@@ -57,7 +50,7 @@ def question_user(message) :
     if ans== 'y' or ans == 'Y' :
         return True
     elif ans == 'p' :
-        end_prog() # emergency stop for debug
+        state = 10 # Ending program (or restarting)# emergency stop for debug
     else :
         return False
 
@@ -69,7 +62,7 @@ def skip_track():
         file_nb += 1 # file being treated = next in the list
         remaining_file_nb -= 1 # one file done
     else :
-        end_prog()
+        state = 10
 
 
 # Removes the "'feat." type from the title
@@ -102,7 +95,7 @@ def get_file(file_url,filename,path) :
         return 0
 
 def main():
-    global treated_file_nb, remaining_file_nb, file_nb, All_Auto
+    global treated_file_nb, remaining_file_nb, file_nb, All_Auto, state
 
     # Variable initialization
     Is_Sure = True
@@ -111,10 +104,9 @@ def main():
     file_name = ["music.mp3"]
     title = ""
     artist = ""
-    #track
-    state = 0
+    #track ?
 
-    #getting automatic path (in the directory of the program) "
+    # Getting path (in the directory of the program) "
     path = os.path.dirname(os.path.realpath(__file__))
     temp = "\ "
     temp=temp[:1]
@@ -123,15 +115,29 @@ def main():
 
     # getting info from config file : 
     with open("config.json", mode="r") as j_object:
-        data = json.load(j_object)
+        config = json.load(j_object)
 
-    prefered_feat_acronyme = data["prefered_feat_acronyme"]
-    default_genre       = data["default_genre"]      
-    folder_name         = data["folder_name"] 
-    second_folder_name  = data["second_folder_name"]
-    Open_image_auto     = data["Open_image_auto"]       
-    Assume_mep_is_right = data["Assume_mep_is_right"]        
-    All_Auto            = data["All_Auto"]
+    prefered_feat_acronyme = config["prefered_feat_acronyme"]
+    default_genre          = config["default_genre"]      
+    folder_name            = config["folder_name"] 
+    second_folder_name     = config["second_folder_name"]
+
+    if config["mode"] == 1 : 
+        All_Auto = True
+        Assume_mep_is_right = True
+        Open_image_auto = False
+    elif config["mode"] == 2 :
+        All_Auto = False
+        Assume_mep_is_right = True
+        Open_image_auto = False
+    else :
+        All_Auto = False
+        Assume_mep_is_right = False
+        Open_image_auto = True
+
+    # Spotify api autorisation 
+    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id = config["client_id"],
+                                                           client_secret = config["client_secret"]))
 
     while True :
 
@@ -143,14 +149,14 @@ def main():
             prog_name = prog_name[len(path):] #removing path from the file name
             print("\n")
 
+            # scanning folder
             music_file_found = False
             folder1_found    = False
             folder2_found    = False
-
             wrong_format     = False
-            # scanning folder
             for temp_file_name in os.listdir(path): 
                 temp, temp_file_extension = os.path.splitext(temp_file_name)
+                
                 if temp_file_extension in accepted_extensions :
                     file_name.append(temp_file_name)  
                     file_extension.append(temp_file_extension)
@@ -163,7 +169,7 @@ def main():
                 elif temp_file_name == second_folder_name :
                     folder2_found = True
 
-                elif (temp_file_name != prog_name) and (temp_file_extension != "") :
+                elif (temp_file_name != prog_name) and (temp_file_extension != "") and (temp_file_extension != ".json") :
                     wrong_format=True
                     wrong_file_name=temp_file_name
             
@@ -181,10 +187,10 @@ def main():
                 print("the supported formats are : ")
                 for i in range(0,len(accepted_extensions)):
                     print(accepted_extensions[i])
-                end_prog()
+                state = 10
             else : # no file other than program and directory was found
                 print("error : no music file found")
-                end_prog()
+                state = 10
 
         # ------------------------------------------------------ #
         # STATE 1 : get title and artist automatically
@@ -223,7 +229,6 @@ def main():
                 print ("no title found")
                 state = 2 # get title and artist manually
 
-
         # ------------------------------------------------------ #
         # STATE 2 : get title and artist manually
         elif state == 2 :
@@ -238,13 +243,13 @@ def main():
         # STATE 3 : Search info on track
         elif state == 3 : 
             # Search for more info on the track using spotify api
-            search = "track:"+title+" artist:"+artist
-            results = sp.search(q=search,type="track",limit=1)   
+            search = "track:" + title + " artist:" + artist
+            results = sp.search(q = search, type = "track", limit = 1)   
             items = results['tracks']['items']
             #pprint.pprint(results) #debug 
             
             # Can a result be found
-            if len(items)>0 :
+            if len(items) > 0 :
                 print("\nWe have a match !\n")
                 Is_Sure = True
                 track = items[0]
@@ -252,11 +257,11 @@ def main():
                 state = 4 # user verification (track object and title needed)
             else :
                 # trying without the artist
-                search = "track:"+title
-                results = sp.search(q=search,type="track",limit=1)
+                search = "track:" + title
+                results = sp.search(q = search, type = "track", limit = 1)
 
                 items = results['tracks']['items']
-                if len(items)>0 :
+                if len(items) > 0 :
                     Is_Sure = False
                     print("\nexact track not found\n\nPotential track :")
                     track = items[0] 
@@ -286,14 +291,14 @@ def main():
 
             # getting genre 
             results = sp.artist(track['artists'][0]['id'])   
-            if len(results['genres'])>0:
+            if len(results['genres']) > 0:
                 track['genres'] = results['genres']
             else :
                 track['genres'] = default_genre
             # is there a featured artist ?
             nb_artist = len(track['artists'])   
             if nb_artist == 1 : # no feat
-                print("{} by {} :".format(track['name'],track['artists'][0]['name']))
+                print("{} by {} :".format(track['name'], track['artists'][0]['name']))
 
             else :# at least 1 feat
                 track['name'] = remove_feat(track['name'])
@@ -385,7 +390,26 @@ def main():
                 file_nb += 1 # file being treated = next in the list
                 state = 1 # get title and artist automatically
             else :
-                end_prog()
+                state = 10 # Ending program (or restarting)# Ending program (or restarting)
+
+        # ------------------------------------------------------ #
+        # STATE 10 : Ending program (or restarting)
+        elif state == 10 :
+
+            if config["mode"] == 2 : 
+                # reset variables
+                file_extension = [".mp3"]
+                file_name = ["music.mp3"]
+                treated_file_nb = 0
+                file_nb = 0
+                remaining_file_nb = 0
+                state = 0
+
+            else :
+                print("{} files correctly processed out of {}".format(treated_file_nb,file_nb))
+                sys.exit("bye")
+                
+            
 
 
 if __name__ == '__main__':
