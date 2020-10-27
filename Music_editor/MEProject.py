@@ -115,9 +115,9 @@ def main():
 
     # Getting path (in the directory of the program) "
     path = os.path.dirname(os.path.realpath(__file__))
-    temp = "\ "
-    temp=temp[:1]
-    path = path+temp 
+    antislash = "\ "
+    antislash=antislash[:1]
+    path = path+antislash 
     eyed3.log.setLevel("ERROR") # hides errors from mp3 data
 
     # getting info from config file : 
@@ -209,32 +209,32 @@ def main():
             audiofile = eyed3.load(temp_path)
             if type(audiofile.tag.title)!='NoneType' :
                 temp_title = remove_feat(audiofile.tag.title)
-                if type(audiofile.tag.artist)!='NoneType' and audiofile.tag.artist != "None" :
-                    temp_artist = audiofile.tag.artist
-                else : 
+                test=str(type(audiofile.tag.artist))
+                if test == "<class 'NoneType'>" or audiofile.tag.artist == "None" :
                     temp_artist = "not found"
+                else : 
+                    temp_artist = audiofile.tag.artist
+                    print("echec")
                     
                 # Displays if at least the title was found
                 print("artist : {}".format(temp_artist))
                 print("title : {}".format(temp_title))
                 
                 if question_user("Wrong ?"):
-                    if All_Auto :
-                        skip_track()
-                        state = 1 # get title and artist automatically
-
-                    else :
-                        print("Let's do it manually then !\n")
-                        state = 2 # get title and artist manually  
+                    print("Let's do it manually then !\n")
+                    state = 2 # get title and artist manually  
 
                 else :
                     title  = temp_title
-                    artist = audiofile.tag.artist
+                    artist = temp_artist
                     state = 3 # search info on track (title and artist needed)
 
             else :
                 print ("no title found")
-                state = 2 # get title and artist manually
+                if All_Auto :
+                    skip_track()
+                else :
+                    state = 2 # get title and artist manually
 
         # ------------------------------------------------------ #
         # STATE 2 : get title and artist manually
@@ -247,10 +247,10 @@ def main():
 
 
         # ------------------------------------------------------ #
-        # STATE 3 : Search info on track
+        # STATE 3 : Search info on track 
         elif state == 3 : 
-            # Search for more info on the track using spotify api
-            search = "track:" + title + " artist:" + artist
+            # Search for more info on the track using spotify api 
+            search = "track:" + title.replace("'","") + " artist:" + artist
             results = sp.search(q = search, type = "track", limit = 1)   
             items = results['tracks']['items']
             #pprint.pprint(results) #debug 
@@ -264,7 +264,7 @@ def main():
                 state = 4 # user verification (track object and title needed)
             else :
                 # trying without the artist
-                search = "track:" + title
+                search = "track:" + title.replace("'","")
                 results = sp.search(q = search, type = "track", limit = 1)
 
                 items = results['tracks']['items']
@@ -286,7 +286,6 @@ def main():
                     print("function under developpement... sorry")
                     skip_track()
                     # TEMPORARY
-                    print(state)
 
                 else:
                     skip_track()
@@ -321,11 +320,11 @@ def main():
             print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(track['album']['name'],track['genres'][0],track['album']['release_date'],track['track_number'],track['album']['total_tracks']))
             
             # displaying image
-            if Open_image_auto and not All_Auto :
+            if Open_image_auto :
                 webbrowser.open(track['album']['images'][0]['url'])
 
             # switch state
-            if Assume_mep_is_right or All_Auto:
+            if Assume_mep_is_right :
                 state = 5 # file update (track object needed)
 
             elif not question_user("wrong song ?"):
@@ -343,8 +342,12 @@ def main():
         elif state == 5 :
     
             #preparing new file name and directory path
-            new_file_name = track['name'] + "_" + track['artists'][0]['name'] + file_extension[file_nb]
-            new_file_name = new_file_name.replace('/',' ')
+            new_file_name = track['name'] + "_" + track['artists'][0]['name']
+            new_file_name = new_file_name.replace('/','') # removing / . , and "  frome name
+            new_file_name = new_file_name.replace('.','') 
+            new_file_name = new_file_name.replace(',','') 
+            new_file_name = new_file_name.replace('"','') 
+            new_file_name +=  file_extension[file_nb]
 
             temp_path = path + file_name[file_nb]
             new_path = path + new_file_name
@@ -353,8 +356,6 @@ def main():
             if os.path.exists(temp_path):
                 src = os.path.realpath(temp_path)
                 os.rename(temp_path,new_path)
-                #print("new file name : {}".format(new_file_name))
-                #print("file {} processed ! {} files remaining\n".format(file_nb,remaining_file_nb-1))
             else :
                 print("error : file missing from directory")
             
@@ -380,13 +381,18 @@ def main():
 
             # append image to tags
             audiofile.tag.images.set(3,imagedata,"image/jpeg",u"album_artwork")
-            #audiofile.tag.save()
+            
+            if os.path.exists(new_path) :
+                audiofile.tag.save()
+            
 
             # moving file and deleting temporary image
-            if Is_Sure :
-                shutil.move(new_path,path+folder_name)
-            else : 
-                shutil.move(new_path,path+second_folder_name)
+            if Is_Sure and not os.path.exists(path+folder_name+antislash+new_file_name) : 
+                shutil.move(new_path,path+folder_name) # place in first folder
+            elif not (Is_Sure or os.path.exists(path+second_folder_name+antislash+new_file_name)) :    
+                shutil.move(new_path,path+second_folder_name) # place in second folder
+            else :
+                print("File already present in folder !!!!")
             os.remove(image_path)
 
             # input("all done !")
