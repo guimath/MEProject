@@ -55,17 +55,6 @@ def question_user(message) :
     else :
         return False
 
-# Used if file can't be treated 
-# will start process of the next file if available or end prog
-def skip_track():
-    global file_nb,treated_file_nb,remaining_file_nb, state
-    if remaining_file_nb > 1 :
-        file_nb += 1 # file being treated = next in the list
-        remaining_file_nb -= 1 # one file done
-        state = 1
-    else :
-        state = 10
-
 
 # Removes the "'feat." type from the title
 # returns corrected title
@@ -113,35 +102,42 @@ def main():
     artist = ""
     #track ?
 
-    # Getting path (in the directory of the program) "
+    # Getting path (in the directory of the program) 
     path = os.path.dirname(os.path.realpath(__file__))
     antislash = "\ "
     antislash=antislash[:1]
     path = path+antislash 
-    eyed3.log.setLevel("ERROR") # hides errors from mp3 data
+    eyed3.log.setLevel("ERROR") # hides errors from eyed3 package
+
+    # getting the name of the prog
+    prog_name = os.path.abspath(sys.argv[0])
+    prog_name = prog_name[len(path):] #removing path from the file name
 
     # getting info from config file : 
     with open(path+"config.json", mode="r") as j_object:
         config = json.load(j_object)
 
-    prefered_feat_acronyme = config["prefered_feat_acronyme"]
+    prefered_feat_acronyme = config["prefered_feat_sign"]
     default_genre          = config["default_genre"]      
     folder_name            = config["folder_name"] 
     second_folder_name     = config["second_folder_name"]
+    third_folder_name      = config["third_folder_name"]
 
-    if config["mode"] == 1 : 
+    if config["mode"] == 1 : # full auto
         All_Auto = True
         Assume_mep_is_right = True
         Open_image_auto = False
-    elif config["mode"] == 2 :
+    elif config["mode"] == 2 : # semi auto
         All_Auto = False
         Assume_mep_is_right = True
         Open_image_auto = False
     else :
-        config["mode"] = 3
+        config["mode"] = 3 # discovery
         All_Auto = False
         Assume_mep_is_right = False
         Open_image_auto = True
+
+
 
     # Spotify api autorisation 
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id = config["client_id"],
@@ -150,17 +146,13 @@ def main():
     while True :
 
         # ------------------------------------------------------ #
-        # STATE 0 : Scanning of folder
+        # STATE 0 : Scanning folder
         if state == 0 : 
-            # getting the name of the prog
-            prog_name = os.path.abspath(sys.argv[0])
-            prog_name = prog_name[len(path):] #removing path from the file name
-            
-
             # scanning folder
             music_file_found = False
             folder1_found    = False
             folder2_found    = False
+            folder3_found    = False
             wrong_format     = False
             for temp_file_name in os.listdir(path): 
                 temp, temp_file_extension = os.path.splitext(temp_file_name)
@@ -176,6 +168,9 @@ def main():
 
                 elif temp_file_name == second_folder_name :
                     folder2_found = True
+                
+                elif temp_file_name == third_folder_name :
+                    folder3_found = True
 
                 elif (temp_file_name != prog_name) and (temp_file_extension != "") and (temp_file_extension != ".json") :
                     wrong_format=True
@@ -186,6 +181,8 @@ def main():
                 os.makedirs(path+folder_name)
             if not folder2_found :
                 os.makedirs(path+second_folder_name)
+            if not folder3_found :
+                os.makedirs(path+third_folder_name)
 
             # File found ?
             if music_file_found :
@@ -214,7 +211,6 @@ def main():
                     temp_artist = "not found"
                 else : 
                     temp_artist = audiofile.tag.artist
-                    print("echec")
                     
                 # Displays if at least the title was found
                 print("artist : {}".format(temp_artist))
@@ -232,7 +228,7 @@ def main():
             else :
                 print ("no title found")
                 if All_Auto :
-                    skip_track()
+                    state = 20
                 else :
                     state = 2 # get title and artist manually
 
@@ -262,8 +258,8 @@ def main():
                 track = items[0]
                 # switch state 
                 state = 4 # user verification (track object and title needed)
-            else :
-                # trying without the artist
+            elif not All_Auto :
+                # trying without the artist only if user can verify
                 search = "track:" + title.replace("'","")
                 results = sp.search(q = search, type = "track", limit = 1)
 
@@ -277,18 +273,18 @@ def main():
             
                 # music not found -> switch state
                 elif All_Auto :
-                    skip_track()
+                    state = 20
                     
                 elif question_user("error 808 : music not found... \nDo you want to retry with another spelling ?"):
                     state = 2 # get title and artist manually
 
                 elif question_user("Fill the data manually ?"):
                     print("function under developpement... sorry")
-                    skip_track()
+                    state = 20
                     # TEMPORARY
 
                 else:
-                    skip_track()
+                    state = 20
 
         # ------------------------------------------------------ #
         # STATE 4 : User verification (track object and title needed)
@@ -324,7 +320,7 @@ def main():
                 webbrowser.open(track['album']['images'][0]['url'])
 
             # switch state
-            if Assume_mep_is_right :
+            if Assume_mep_is_right and Is_Sure:
                 state = 5 # file update (track object needed)
 
             elif not question_user("wrong song ?"):
@@ -334,7 +330,7 @@ def main():
                 state = 2 # get title and artist manually
 
             else : 
-                skip_track()
+                state = 20
 
     
         # ------------------------------------------------------ #
@@ -404,6 +400,23 @@ def main():
                 state = 1 # get title and artist automatically
             else :
                 state = 10 # Ending program (or restarting)# Ending program (or restarting)
+
+        # ------------------------------------------------------ #
+        # STATE 20 : Skipping track
+        elif state == 20 :
+
+            if not All_Auto :
+                # file needs to be moved to third folder
+                temp_path = path + file_name[file_nb]
+                if not os.path.exists(path+third_folder_name+antislash+file_name[file_nb]) :    
+                    shutil.move(temp_path,path+third_folder_name) # place in third folder
+
+            if remaining_file_nb > 1 :
+                file_nb += 1 # file being treated = next in the list
+                remaining_file_nb -= 1 # one file done
+                state = 1 
+            else :
+                state = 10
 
         # ------------------------------------------------------ #
         # STATE 10 : Ending program (or restarting)
