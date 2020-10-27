@@ -1,10 +1,41 @@
 {
-    "folder_name"            : "processed music", 
-    "prefered_feat_acronyme" : "feat. ",
-    "default_genre"          : "Other",   
-    "second_folder_name"     : "TBV music",
-    "Mode_comment"           : "1 is full auto, 2 is semi auto and 3 is discovery",
-    "mode"                   : 2,       
+       
+    "_Mode_comment"      : "1 is full auto, 2 is semi auto and 3 is discovery",
+    "mode"               : 2,
+
+
+    "_comment_folders1"  : "First folder is for all music that is 100% correct",
+    "_comment_folders2"  : "Second folder is for uncertain music",
+    "_comment_folders3"  : "Third folder is for the music that couldn't be found on spotify",
+    "folder_name"        : "processed music", 
+    "second_folder_name" : "TBV music",
+    "third_folder_name"  : "Untreated music",    
+    "prefered_feat_sign" : "feat. ",
+    "default_genre"      : "Other",
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+
+
+    "_comment_keys"          : "Please share with care those keys are private !",
     "client_id"              : "fb69ab85a5c749e08713458e85754515",
     "client_secret"          : "ebe33b7ed0cd495a8e91bc4032e9edf2"
 }
