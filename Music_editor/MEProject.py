@@ -98,13 +98,12 @@ def main():
     global treated_file_nb, remaining_file_nb, file_nb, All_Auto, state
 
     # Variable initialization
-    Is_Sure = True
+    Is_Sure = bool
     accepted_extensions = [".mp3", ".flac"]
     file_extension = [".mp3"]
     file_name = ["music.mp3"]
     title = ""
     artist = ""
-    #track ?
 
     # Getting path (in the directory of the program) "
     path = os.path.dirname(os.path.realpath(__file__))
