@@ -193,7 +193,7 @@ def main():
             
             # trying to see if there are correct tags
             audiofile = eyed3.load(temp_path)
-            if type(audiofile.tag.title)!='NoneType' :
+            if str(type(audiofile.tag.title))!="<class 'NoneType'>" :
                 temp_title = remove_feat(audiofile.tag.title)
                 test=str(type(audiofile.tag.artist))
                 if test == "<class 'NoneType'>" or audiofile.tag.artist == "None" :
@@ -368,8 +368,15 @@ def main():
             audiofile.tag.album  = track['album']['name']
             audiofile.tag.album_artist = track['artists'][0]['name']
             audiofile.tag.track_num    = (track['track_number'],track['album']['total_tracks'])
-            audiofile.tag.release_date = track['album']['release_date'][:4] # only storing the year
-             
+            audiofile.tag.release_date   = track['album']['release_date'][:4]  # only year
+            audiofile.tag.original_release_date   = track['album']['release_date'][:4]
+            #TEMPORARY (the date and other more in depth tags don't work rn) 
+            """
+            eyed3.core.Date.year  = int(track['album']['release_date'][:4])
+            eyed3.core.Date.month = int(track['album']['release_date'][5:][:2])
+            eyed3.core.Date.day   = int(track['album']['release_date'][8:])
+            """
+
             # read image into memory
             imagedata = open(image_path,"rb").read()
             # deleting previous artwork if present
