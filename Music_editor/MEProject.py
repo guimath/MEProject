@@ -21,7 +21,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 # for debug only
 #import pprint 
 
-# modifiable variables in config file
+# modifiable variables in config file TO UPDATE !!!!!!!!!!!!!!!!!!!!!!
 '''
 folder_name             : Name of the folder where all the music will be droped
 second_folder_name      : Name of the folder where the music will be droped if the program is unsure
@@ -117,23 +117,25 @@ def main():
     prefered_feat_acronyme = config["prefered_feat_sign"]
     default_genre          = config["default_genre"]      
     folder_name            = config["folder_name"] 
-    second_folder_name     = config["second_folder_name"]
-    third_folder_name      = config["third_folder_name"]
 
+
+    print("Hello !")
     if config["mode"] == 1 : # full auto
         All_Auto = True
         Assume_mep_is_right = True
         Open_image_auto = False
+        print("Mode : full auto")
     elif config["mode"] == 2 : # semi auto
         All_Auto = False
         Assume_mep_is_right = True
         Open_image_auto = False
+        print("Mode : semi auto")
     else :
         config["mode"] = 3 # discovery
         All_Auto = False
         Assume_mep_is_right = False
         Open_image_auto = True
-
+        print("Mode : discovery")
 
 
     # Spotify api autorisation 
@@ -147,9 +149,7 @@ def main():
         if state == 0 : 
             # scanning folder
             music_file_found = False
-            folder1_found    = False
-            folder2_found    = False
-            folder3_found    = False
+            folder_found    = False
             wrong_format     = False
             for temp_file_name in os.listdir(path): 
                 temp, temp_file_extension = os.path.splitext(temp_file_name)
@@ -161,25 +161,15 @@ def main():
                     music_file_found = True
 
                 elif temp_file_name == folder_name :
-                    folder1_found = True
-
-                elif temp_file_name == second_folder_name :
-                    folder2_found = True
-                
-                elif temp_file_name == third_folder_name :
-                    folder3_found = True
+                    folder_found = True
 
                 elif (temp_file_name != prog_name) and (temp_file_extension != "") and (temp_file_extension != ".json") :
                     wrong_format=True
                     wrong_file_name=temp_file_name
             
             # if there isn't a folder already, creates it
-            if not folder1_found :
+            if not folder_found :
                 os.makedirs(path+folder_name)
-            if not folder2_found :
-                os.makedirs(path+second_folder_name)
-            if not folder3_found :
-                os.makedirs(path+third_folder_name)
 
             # File found ?
             if music_file_found :
@@ -189,13 +179,15 @@ def main():
                 print("the supported formats are : ")
                 for i in range(0,len(accepted_extensions)):
                     print(accepted_extensions[i])
-                state = 10
+                time.sleep(4)
+                state = 10 
             else : # no file other than program and directory was found
                 state = 10
 
         # ------------------------------------------------------ #
         # STATE 1 : get title and artist automatically
         elif state == 1 : 
+            print("--------------------------------------------------------------------------")
             print("file {} out of {} : '{}'".format(file_nb,remaining_file_nb+treated_file_nb,file_name[file_nb]))
             temp_path = path + file_name[file_nb]
             
@@ -211,7 +203,7 @@ def main():
                     
                 # Displays if at least the title was found
                 print("artist : {}".format(temp_artist))
-                print("title : {}".format(temp_title))
+                print("title  : {}".format(temp_title))
                 
                 if question_user("Wrong ?"):
                     print("Let's do it manually then !\n")
@@ -250,11 +242,15 @@ def main():
             
             # Can a result be found
             if len(items) > 0 :
-                print("\nWe have a match !\n")
+                print("")
+                print("We have a match !")
+                print("")
                 Is_Sure = True
                 track = items[0]
+
                 # switch state 
-                state = 4 # user verification (track object and title needed)
+                state = 32 # Getting genre (track object and title needed)
+
             elif not All_Auto :
                 # trying without the artist only if user can verify
                 search = "track:" + title.replace("'","")
@@ -263,36 +259,44 @@ def main():
                 items = results['tracks']['items']
                 if len(items) > 0 :
                     Is_Sure = False
-                    print("\nexact track not found\n\nPotential track :")
+                    print("\nexact track not found \nPotential track :")
                     track = items[0] 
-                    # switch state
-                    state = 4 # user verification (track object and title needed)
+                    state = 32 # Getting genre (track object and title needed)
             
                 # music not found -> switch state
                 elif All_Auto :
-                    state = 20
+                    state = 20 # skip track
                     
                 elif question_user("error 808 : music not found... \nDo you want to retry with another spelling ?"):
                     state = 2 # get title and artist manually
 
                 elif question_user("Fill the data manually ?"):
-                    print("function under developpement... sorry")
-                    state = 20
-                    # TEMPORARY
+                    state = 31 # manual tagging
 
                 else:
-                    state = 20
+                    print("\n")
+                    state = 20 # skip track
 
         # ------------------------------------------------------ #
-        # STATE 4 : User verification (track object and title needed)
-        elif state == 4 :
+        # STATE 31 : manual tagging
+        elif state == 31 :
+            print("function under developpement... sorry")
+            state = 20 # skip track
+            # TEMPORARY (will make user fill track object than go to state 4)
 
-            # getting genre 
+        # ------------------------------------------------------ #
+        # STATE 32 : Getting genre auto
+        elif state == 32 :
             results = sp.artist(track['artists'][0]['id'])   
             if len(results['genres']) > 0:
                 track['genres'] = results['genres']
             else :
                 track['genres'] = default_genre
+            state = 4
+
+        # ------------------------------------------------------ #
+        # STATE 4 : User verification (track object and title needed)
+        elif state == 4 :
             # is there a featured artist ?
             nb_artist = len(track['artists'])   
             if nb_artist == 1 : # no feat
@@ -379,41 +383,33 @@ def main():
                 audiofile.tag.save()
             
 
-            # moving file and deleting temporary image
-            if Is_Sure and not os.path.exists(path+folder_name+antislash+new_file_name) : 
+            # moving file 
+            if not os.path.exists(path+folder_name+antislash+new_file_name) : 
                 shutil.move(new_path,path+folder_name) # place in first folder
-            elif not (Is_Sure or os.path.exists(path+second_folder_name+antislash+new_file_name)) :    
-                shutil.move(new_path,path+second_folder_name) # place in second folder
+                treated_file_nb += 1 # file correctly treated
             else :
                 print("File already present in folder !!!!")
-            os.remove(image_path)
-
-            # input("all done !")
-            # switch state
-            treated_file_nb += 1
-            remaining_file_nb -= 1 # one file done
-            if (remaining_file_nb>0) : 
-                file_nb += 1 # file being treated = next in the list
-                state = 1 # get title and artist automatically
-            else :
-                state = 10 # Ending program (or restarting)# Ending program (or restarting)
-
-        # ------------------------------------------------------ #
-        # STATE 20 : Skipping track
-        elif state == 20 :
-
-            if not All_Auto :
-                # file needs to be moved to third folder
-                temp_path = path + file_name[file_nb]
-                if not os.path.exists(path+third_folder_name+antislash+file_name[file_nb]) :    
-                    shutil.move(temp_path,path+third_folder_name) # place in third folder
-
+                
+            # changing state
             if remaining_file_nb > 1 :
                 file_nb += 1 # file being treated = next in the list
                 remaining_file_nb -= 1 # one file done
-                state = 1 
+                state = 1 # get title and artist automatically (new song)
             else :
-                state = 10
+                state = 10 # Ending program (or restarting)
+                
+            # removing image 
+            os.remove(image_path) 
+
+        # ------------------------------------------------------ #
+        # STATE 20 : Skipping track (only atteingned from full auto mode)
+        elif state == 20 :
+            if remaining_file_nb > 1 :
+                file_nb += 1 # file being treated = next in the list
+                remaining_file_nb -= 1 # one file done
+                state = 1 # Get title and artist auto
+            else :
+                state = 10 # End prog
 
         # ------------------------------------------------------ #
         # STATE 10 : Ending program (or restarting)
@@ -424,13 +420,12 @@ def main():
                 time.sleep(1)
                 file_extension = [".mp3"]
                 file_name = ["music.mp3"]
-                treated_file_nb = 0
                 file_nb = 1
                 remaining_file_nb = 0
                 state = 0
 
             else :
-                print("{} files correctly processed out of {}".format(treated_file_nb,file_nb))
+                input("{} files correctly processed out of {}".format(treated_file_nb,file_nb))
                 sys.exit("bye")
                 
             
