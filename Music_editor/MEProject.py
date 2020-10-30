@@ -243,13 +243,13 @@ def main():
             # Can a result be found
             if len(items) > 0 :
                  
-
+                
                 print("")
                 print("We have a match !")
                 print("")
                 Is_Sure = True
                 track = items[0]
-
+                track['album']['artwork'] = track['album']['images'][0]['url'] 
                 # switch state 
                 state = 32 # Getting genre (track object and title needed)
 
@@ -263,6 +263,7 @@ def main():
                     Is_Sure = False
                     print("\nexact track not found \nPotential track :")
                     track = items[0] 
+                    track['album']['artwork'] = track['album']['images'][0]['url'] 
                     state = 32 # Getting genre (track object and title needed)
             
                 # music not found -> switch state
@@ -282,9 +283,45 @@ def main():
         # ------------------------------------------------------ #
         # STATE 31 : manual tagging
         elif state == 31 :
-            print("function under developpement... sorry")
-            state = 20 # skip track
-            # TEMPORARY (will make user fill track object than go to state 4)
+
+            print("ok let's go !")
+            print("title  : " + title)
+            print("artist : " + artist)
+
+            # init variables (if no track object was created before hand)
+            track = {}
+            track['artists'] = [{}]
+            track['album']   =  {}
+
+            # user filled data
+            track['name']                 = title
+            track['artists'][0]['name']    = artist
+            webbrowser.open("https://www.google.com/search?q="+track['name']+"+"+track['artists'][0]['name'])
+
+            if question_user("more than one artist ?") :
+                track['artists'].append({'name' : input("second artist : ")})
+                y = input("third artist (just press enter if there isn't another): ")
+                if y != "":
+                    track['artists'].append({'name' : y})
+
+            track['album']['name']         =     input("album        : ")
+            track['album']['release_date'] =     input("year         : ")
+            track['track_number']          = int(input("track number : "))
+            track['album']['total_tracks'] = int(input("out of       : "))
+            #getting user to pick an artwork
+            
+            track['album']['artwork']      = input("image url        : ")
+
+
+            # default stuff : might try to do other searches (with album for exemple) to complete those
+            track['disc_number']= None
+            track['genre']      = default_genre
+            track['album']['copyright'] = ""
+            track['album']['label'] = ""
+            track['bpm'] = 0 # default
+
+            print("\n Ok let's recap\n")
+            state = 4 # user verification
 
         # ------------------------------------------------------ #
         # STATE 32 : Getting genre + other info auto
@@ -293,20 +330,26 @@ def main():
             results = sp.artist(track['artists'][0]['id'])
             #pprint.pprint(results)
             if len(results['genres']) > 0:
-                track['genres'] = results['genres']
+                track['genre'] = results['genres'][0]
             else :
-                track['genres'] = default_genre
+                track['genre'] = default_genre
 
             # getting label and copyright
             results = sp.album(track['album']['id'])
             if len(results) > 0 : 
                 track['album']['copyright'] = results['copyrights'][0]['text']
                 track['album']['label'] = results['label']
+            else : 
+                # default
+                track['album']['copyright'] = ""
+                track['album']['label'] = ""  
 
             # getting BPM
             results = sp.audio_analysis(track['id'])
             if len(results) > 0 :
                 track['bpm'] = int(results['track']['tempo'])
+            else : 
+                track['bpm'] = 0 # default
 
             state = 4
 
@@ -331,11 +374,11 @@ def main():
                     track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+" & "+track['artists'][2]['name']+")"# correct title
             
             # Display info
-            print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(track['album']['name'],track['genres'][0],track['album']['release_date'],track['track_number'],track['album']['total_tracks']))
+            print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(track['album']['name'],track['genre'],track['album']['release_date'],track['track_number'],track['album']['total_tracks']))
             
             # displaying image
             if Open_image_auto :
-                webbrowser.open(track['album']['images'][0]['url'])
+                webbrowser.open(track['album']['artwork'])
 
             # switch state
             if Assume_mep_is_right and Is_Sure:
@@ -347,6 +390,8 @@ def main():
             elif question_user("Do you want to retry with another spelling ?"):
                 state = 2 # get title and artist manually
 
+            elif question_user("fill the data manually ?"):
+                state = 31
             else : 
                 state = 20
 
@@ -375,14 +420,14 @@ def main():
             
             # downloading file
             image_name = track['album']['name']+"_artwork.jpg"
-            image_path = get_file(track['album']['images'][0]['url'],image_name,path)
+            image_path = get_file(track['album']['artwork'],image_name,path)
             
             # modifing the tags
             tag = eyed3.id3.tag.Tag()
             if tag.parse(fileobj=new_path) : 
                 tag.title        = track['name']
                 tag.artist       = track['artists'][0]['name']
-                tag.genre        = track['genres'][0]
+                tag.genre        = track['genre']
                 tag.album        = track['album']['name']
                 tag.album_artist = track['artists'][0]['name']
                 tag.track_num    = (track['track_number'],track['album']['total_tracks'])
@@ -396,7 +441,7 @@ def main():
                 #tag.composer = "compositeur"
                 
                 # doesn't work
-                # tag.lyrics = "Escalope pannée" # doenst work
+                #tag.lyrics = "Escalope pannée" # doenst work
                 # tag.artist_origin = "France" # doesent work
 
                 tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
