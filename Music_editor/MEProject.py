@@ -291,9 +291,7 @@ def main():
         elif state == 32 :
             # genre
             results = sp.artist(track['artists'][0]['id'])
-            #pprint.pprint(results)  
-            for i in results['genres'] :
-                print(i)
+            #pprint.pprint(results)
             if len(results['genres']) > 0:
                 track['genres'] = results['genres']
             else :
@@ -400,12 +398,8 @@ def main():
                 # doesn't work
                 # tag.lyrics = "Escalope pannée" # doenst work
                 # tag.artist_origin = "France" # doesent work
-                #tag.best_release_date = tag.getBestDate()
 
-                #doesn't do shit ??
-                tag.release_date = 2012 #track['album']['release_date'][:4]  # doesn't change anything
-                tag.original_release_date   = 2012 #track['album']['release_date'][:4] # doesn't change anything
-                tag.tagging_date = 2012 # doesn't change anything
+                tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
                 
                 if store_image_in_file :
                     # read image into memory
