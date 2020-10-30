@@ -19,17 +19,14 @@ import spotipy #Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 
 # for debug only
-#import pprint 
+import pprint 
 
 # modifiable variables in config file TO UPDATE !!!!!!!!!!!!!!!!!!!!!!
 '''
 folder_name             : Name of the folder where all the music will be droped
-second_folder_name      : Name of the folder where the music will be droped if the program is unsure
 prefered_feat_acronyme  : Used when a track has multiple artist. The title will look like : *title_of_track* (*prefered_feat_acronyme* *other artist*)
 default_genre           : If MEP doesn't find a genre this is what will be written in the file
-Open_image_auto         : True : MEP will automatically open the album image in your most recent browser window | False : No image is opened
-Assume_mep_is_right     : True : once MEP has identified a track it will directly change the tags | False : MEP will fist ask you if the track is correct
-All_Auto                : True : will try to run fully automaticly. If a file requires human input, it simply won't be treated
+mode                    : 1 is full auto, 2 is semi auto and 3 is discovery
 '''
 
 #global variables
@@ -51,13 +48,14 @@ def question_user(message) :
     if ans== 'y' or ans == 'Y' :
         return True
     elif ans == 'p' :
+
         state = 10 # Ending program (or restarting)# emergency stop for debug
     else :
         return False
 
 
 # Removes the "'feat." type from the title
-# returns corrected title
+# @returns corrected title
 def remove_feat(title) :
     if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
         # complicated in case there is anothere paranthesis in the title
@@ -69,7 +67,7 @@ def remove_feat(title) :
     return title.strip() 
 
 # Downloading picture from specified url as specified filename to specified path
-# returns the complete path of the new downloaded file if worked correctly, else returns 0
+# @returns the complete path of the new downloaded file if worked correctly, else returns 0
 def get_file(file_url,filename,path) :
     path = path + filename
     # Open the url image, set stream to True, this will return the stream content.
@@ -93,11 +91,13 @@ def main():
 
     # Variable initialization
     Is_Sure = True
+    store_image_in_file = True
     accepted_extensions = [".mp3"]
     file_extension = [".mp3"]
     file_name = ["music.mp3"]
     title = ""
     artist = ""
+    signature = "MEP by GM"
 
     # Getting path (in the directory of the program) 
     path = os.path.dirname(os.path.realpath(__file__))
@@ -242,6 +242,8 @@ def main():
             
             # Can a result be found
             if len(items) > 0 :
+                 
+
                 print("")
                 print("We have a match !")
                 print("")
@@ -255,7 +257,7 @@ def main():
                 # trying without the artist only if user can verify
                 search = "track:" + title.replace("'","")
                 results = sp.search(q = search, type = "track", limit = 1)
-
+                
                 items = results['tracks']['items']
                 if len(items) > 0 :
                     Is_Sure = False
@@ -285,14 +287,31 @@ def main():
             # TEMPORARY (will make user fill track object than go to state 4)
 
         # ------------------------------------------------------ #
-        # STATE 32 : Getting genre auto
+        # STATE 32 : Getting genre + other info auto
         elif state == 32 :
-            results = sp.artist(track['artists'][0]['id'])   
+            # genre
+            results = sp.artist(track['artists'][0]['id'])
+            #pprint.pprint(results)  
+            for i in results['genres'] :
+                print(i)
             if len(results['genres']) > 0:
                 track['genres'] = results['genres']
             else :
                 track['genres'] = default_genre
+
+            # getting label and copyright
+            results = sp.album(track['album']['id'])
+            if len(results) > 0 : 
+                track['album']['copyright'] = results['copyrights'][0]['text']
+                track['album']['label'] = results['label']
+
+            # getting BPM
+            results = sp.audio_analysis(track['id'])
+            if len(results) > 0 :
+                track['bpm'] = int(results['track']['tempo'])
+
             state = 4
+
 
         # ------------------------------------------------------ #
         # STATE 4 : User verification (track object and title needed)
@@ -357,42 +376,62 @@ def main():
                 print("error : file missing from directory")
             
             # downloading file
-            image_name = "album_artwork.jpg"
+            image_name = track['album']['name']+"_artwork.jpg"
             image_path = get_file(track['album']['images'][0]['url'],image_name,path)
             
             # modifing the tags
-            audiofile = eyed3.load(new_path)
-            audiofile.tag.title  = track['name']
-            audiofile.tag.artist = track['artists'][0]['name']
-            audiofile.tag.genre  = track['genres'][0]
-            audiofile.tag.album  = track['album']['name']
-            audiofile.tag.album_artist = track['artists'][0]['name']
-            audiofile.tag.track_num    = (track['track_number'],track['album']['total_tracks'])
-            audiofile.tag.release_date   = track['album']['release_date'][:4]  # only year
-            audiofile.tag.original_release_date   = track['album']['release_date'][:4]
+            tag = eyed3.id3.tag.Tag()
+            if tag.parse(fileobj=new_path) : 
+                tag.title        = track['name']
+                tag.artist       = track['artists'][0]['name']
+                tag.genre        = track['genres'][0]
+                tag.album        = track['album']['name']
+                tag.album_artist = track['artists'][0]['name']
+                tag.track_num    = (track['track_number'],track['album']['total_tracks'])
+                tag.disc_num     = (track['disc_number'],None)
+                tag.bpm          = track['bpm']  
+                tag.publisher    = track['album']['label']
+                tag.copyright    = track['album']['copyright']
+                tag.encoded_by   = signature  # Program signature
+
+                # works but no way to get info
+                #tag.composer = "compositeur"
+                
+                # doesn't work
+                # tag.lyrics = "Escalope pannée" # doenst work
+                # tag.artist_origin = "France" # doesent work
+                #tag.best_release_date = tag.getBestDate()
+
+                #doesn't do shit ??
+                tag.release_date = 2012 #track['album']['release_date'][:4]  # doesn't change anything
+                tag.original_release_date   = 2012 #track['album']['release_date'][:4] # doesn't change anything
+                tag.tagging_date = 2012 # doesn't change anything
+                
+                if store_image_in_file :
+                    # read image into memory
+                    imagedata = open(image_path,"rb").read()
+
+                    # deleting previous artwork if present
+                    for i in range(0,len(tag.images)):
+                        tag.images.remove(tag.images[i].description)
+
+                    # append image to tags
+                    tag.images.set(3,imagedata,"image/jpeg",description=image_name)
+
+                else :
+                    # moving image in directory (or deleting if already present)
+                    if not os.path.exists(path+folder_name+antislash+image_name) : 
+                        shutil.move(image_path,path+folder_name) # place in first folder
+                    else :
+                        os.remove(image_path)
+                        
+                tag.save()
+
             #TEMPORARY (the date and other more in depth tags don't work rn) 
-            """
-            eyed3.core.Date.year  = int(track['album']['release_date'][:4])
-            eyed3.core.Date.month = int(track['album']['release_date'][5:][:2])
-            eyed3.core.Date.day   = int(track['album']['release_date'][8:])
-            """
-
-            # read image into memory
-            imagedata = open(image_path,"rb").read()
-            # deleting previous artwork if present
-            for i in range(0,len(audiofile.tag.images)):
-                audiofile.tag.images.remove(audiofile.tag.images[0].description)
-
-            # append image to tags
-            audiofile.tag.images.set(3,imagedata,"image/jpeg",u"album_artwork")
-            
-            if os.path.exists(new_path) :
-                audiofile.tag.save()
-            
 
             # moving file 
             if not os.path.exists(path+folder_name+antislash+new_file_name) : 
-                shutil.move(new_path,path+folder_name) # place in first folder
+                #shutil.move(new_path,path+folder_name) # place in first folder
                 treated_file_nb += 1 # file correctly treated
             else :
                 print("File already present in folder !!!!")
