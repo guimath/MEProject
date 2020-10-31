@@ -3,23 +3,28 @@
 import os 
 import sys   # to get the name of the prog file
 import time  # for sleep function
+from pathlib import Path # to get path to directory
 
 # for file modification
-from pathlib import Path
+import eyed3  # to parse mp3 files
 import json   # to parse config file
 import shutil # to move file
-import eyed3  # music tag editor 
+import stat   # to change read/write file status
+
+# to 'slugify' string
+import re 
+import unicodedata 
 
 # for image 
 import requests   # to get image from the web 
-import webbrowser # to directly open image in browser 
+import webbrowser # to open url in browser 
 
 # for spotify api 
 import spotipy #Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 
 # for debug only
-import pprint 
+# import pprint 
 
 # modifiable variables in config file TO UPDATE !!!!!!!!!!!!!!!!!!!!!!
 '''
@@ -66,16 +71,15 @@ def remove_feat(title) :
             title = title + "(" + b[i]
     return title.strip() 
 
-def correct(new_file_name) :
-    temp = new_file_name.split('.')
-    extension = '.'+ temp[len(temp)-1]
-    new_file_name = new_file_name.replace(extension,'') # removing extension
-    new_file_name = new_file_name.replace('/','') # removing / . , and "  frome name
-    new_file_name = new_file_name.replace('.','') 
-    new_file_name = new_file_name.replace(',','') 
-    new_file_name = new_file_name.replace('?','')
-    new_file_name = new_file_name.replace('"','') + extension
-    return new_file_name
+
+# removes unwanted characteres to make the name file friendly
+# @return value the correcter string
+def slugify(value) :
+    value = unicodedata.normalize('NFKC', value)
+    value = re.sub(r'[^\w\s-]', '', value).strip().lower()
+    value = re.sub(r'[-\s]+', '-', value)
+
+    return value
 
 # Downloading picture from specified url as specified filename to specified path
 # @returns the complete path of the new downloaded file if worked correctly, else returns 0
@@ -100,15 +104,21 @@ def get_file(file_url,filename,path) :
 def main():
     global treated_file_nb, remaining_file_nb, file_nb, All_Auto, state
 
-    # Variable initialization
-    Is_Sure = True
+    #param (maybe changed in config... not sure yet)
+    get_label           = True
+    get_bpm             = True
+    Is_Sure             = True
+    add_signature       = False
     store_image_in_file = True
+    signature = "MEP by GM"
+
+    # Variable initialization
     accepted_extensions = [".mp3"]
     file_extension = [".mp3"]
     file_name = ["music.mp3"]
     title = ""
     artist = ""
-    signature = "MEP by GM"
+    
 
     # Getting path (in the directory of the program) 
     path = os.path.dirname(os.path.realpath(__file__))
@@ -182,6 +192,9 @@ def main():
             if not folder_found :
                 os.makedirs(path+folder_name)
 
+            #saving total number
+            total_file_nb = remaining_file_nb
+
             # File found ?
             if music_file_found :
                 state = 1 # get title and artist automatically
@@ -200,7 +213,7 @@ def main():
         # STATE 1 : get title and artist automatically
         elif state == 1 : 
             print("--------------------------------------------------------------------------")
-            print("file {} out of {} : '{}'".format(file_nb,remaining_file_nb+treated_file_nb,file_name[file_nb]))
+            print("file {} out of {} : '{}'".format(file_nb,total_file_nb,file_name[file_nb]))
             temp_path = path + file_name[file_nb]
             
             # trying to see if there are correct tags
@@ -354,27 +367,31 @@ def main():
             # genre
             results = sp.artist(track['artists'][0]['id'])
             #pprint.pprint(results)
+            for i in range(0,len(results['genres'])) :
+                print(results['genres'][i])
             if len(results['genres']) > 0:
                 track['genre'] = results['genres'][0]
             else :
                 track['genre'] = default_genre
 
             # getting label and copyright
-            results = sp.album(track['album']['id'])
-            if len(results) > 0 : 
-                track['album']['copyright'] = results['copyrights'][0]['text']
-                track['album']['label'] = results['label']
-            else : 
-                # default
-                track['album']['copyright'] = ""
-                track['album']['label'] = ""  
+            if get_label :
+                results = sp.album(track['album']['id'])
+                if len(results) > 0 : 
+                    track['album']['copyright'] = results['copyrights'][0]['text']
+                    track['album']['label'] = results['label']
+                else : 
+                    # default
+                    track['album']['copyright'] = ""
+                    track['album']['label'] = ""  
 
             # getting BPM
-            results = sp.audio_analysis(track['id'])
-            if len(results) > 0 :
-                track['bpm'] = int(results['track']['tempo'])
-            else : 
-                track['bpm'] = 0 # default
+            if get_bpm :
+                results = sp.audio_analysis(track['id'])
+                if len(results) > 0 :
+                    track['bpm'] = int(results['track']['tempo'])
+                else : 
+                    track['bpm'] = 0 # default
 
             state = 4
 
@@ -424,10 +441,12 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 5 #
         # STATE 5 : File update (track object needed)
         elif state == 5 :
-    
+            # making sure the file is writable : 
+            os.chmod(path+file_name[file_nb],stat.S_IRWXU)
+
             #preparing new file name and directory path
-            new_file_name = track['name'] + "_" + track['artists'][0]['name'] + file_extension[file_nb]
-            new_file_name = correct(new_file_name) #removing annoying characters
+            new_file_name = track['name'] + "_" + track['artists'][0]['name']
+            new_file_name = slugify(new_file_name)  + file_extension[file_nb] #removing annoying characters and adding extension
             
             temp_path = path + file_name[file_nb]
             new_path = path + new_file_name
@@ -440,7 +459,7 @@ def main():
                 print("error : file missing from directory")
             
             # downloading file
-            image_name = correct(track['album']['name']+"_artwork.jpg")
+            image_name = slugify(track['album']['name']+"_artwork")+".jpg"
             image_path = get_file(track['album']['artwork'],image_name,path)
             
             # modifing the tags
@@ -456,17 +475,17 @@ def main():
                 tag.bpm            = track['bpm']  
                 tag.publisher      = track['album']['label']
                 tag.copyright      = track['album']['copyright']
-                tag.encoded_by     = signature  # Program signature
                 tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
+                if add_signature :
+                    tag.encoded_by     = signature  # Program signature
 
                 # works but no way to get info
-                #tag.composer = "compositeur"
+                #tag.composer = ""
                 
                 # doesn't work
                 #tag.lyrics = "Escalope pannée" # doenst work
-                # tag.artist_origin = "France" # doesent work
+                # tag.artist_origin = "France" # doesent work + no easy way to get info
 
-                
                 if store_image_in_file :
                     # read image into memory
                     imagedata = open(image_path,"rb").read()
@@ -488,7 +507,7 @@ def main():
                     else :
                         os.remove(image_path)
                         
-                tag.save()
+                tag.save(encoding="utf-8")
 
             state = 6 # moving file
         
@@ -535,6 +554,7 @@ def main():
                 file_name = ["music.mp3"]
                 file_nb = 1
                 remaining_file_nb = 0
+                total_file_nb = 0
                 state = 0
 
             else :
