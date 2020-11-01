@@ -101,32 +101,110 @@ def get_file(file_url,filename,path) :
     else:
         return 0
 
+
+class Interface :
+    """ Everything that has to do with the visual interface is done here"""
+    def __init__(self, accepted_extensions, debug): 
+        #storing a few parameters
+        self._param_accepted_extension = accepted_extensions
+        self._debug = debug 
+        #will inherit from pyglet ?
+        pass
+    def _display_split_indicator(self) :
+        print("--------------------------------------------------------------------------")
+
+    def display_start_prgm(self, mode) :
+        print("\nWelcome to MEProject !")
+        print("mode : {}".format(mode))
+        print("\n")
+
+    def display_wrong_format(self, wrong_file_name) :
+        print("the file '{}' is not in supported format" .format(wrong_file_name))
+        print("the supported formats are : ")
+        for i in range(0,len(accepted_extensions)):
+            print(accepted_extensions[i])
+
+    def display_start_process(self, file_nb, total_file_nb, file_name) :
+        self._display_split_indicator()
+        print("file {} out of {} : '{}'".format(file_nb,total_file_nb,file_name))
+
+    def display_artist_and_title(self, artist, title) : 
+        print("artist : {}".format(artist))
+        print("title  : {}".format(title))
+
+    def display_already_treated(self) : 
+        print("file has already been treated with MEP")
+
+    def display_get_title_manu(self) :
+        print("Let's do it manually then !\n")
+    
+    def display_no_title_found(self) :
+        print("no title found")
+
+    def display_start_manual_tagging(self, artist, title):
+        print("ok let's go !")
+        self.display_artist_and_title(artist, title)
+
+    def display_track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb) :
+        if Is_Sure :
+            print("")
+            print("We have a match !")
+            print("")
+        else :
+            print("\nexact track not found \nPotential track :")
+        
+        nb_artist = len(artists)
+
+        # Basic infos :
+        if nb_artist == 1 : # no feat
+            print("{} by {} :".format(title, artists[0]['name']))
+
+        elif nb_artist == 2 :
+            print("{} by {} featuring {}".format(title,artists[0]['name'],artists[1]['name']))  
+
+        else :
+              print("{} by {} featuring {} & {}".format(title,artists[0]['name'],artists[1]['name'],artists[2]['name']))         
+        
+        # In depth infos :
+        print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(album,genre,release_date,track_nb,total_track_nb))
+        # there would also be a picture display if all was great...
+
+    def display_error(self, error_nb) :
+        print("file was skipped because of error n°{} :"+ error_nb)
+        if error_nb == 1 :
+            print("file couldn't be edited")
+        elif error_nb == 2 :
+            print("file was moved during process")
+        elif error_nb == 3 : 
+            print("file already in the folder")
+
+
+
 def main():
     global treated_file_nb, remaining_file_nb, file_nb, All_Auto, state
 
     #param (maybe changed in config... not sure yet)
-    get_label           = True
-    get_bpm             = True
-    Is_Sure             = True
     add_signature       = False
-    store_image_in_file = True
     signature = "MEP by GM"
 
     # Variable initialization
-    accepted_extensions = [".mp3"]
-    file_extension = [".mp3"]
-    file_name = ["music.mp3"]
-    title = ""
-    artist = ""
+    debug               = True
+    Is_Sure             = True     #to check wether a file needs to be checked by user
+    accepted_extensions = [".mp3"] #list of all accepted extensions
+    file_extension = [".mp3"]   # will store all file extensions
+    file_name = ["music.mp3"]   # will store all file names 
+    title = "" # temporary string to store track title
+    artist = "" #temporary string to store artist name
     
+    eyed3.log.setLevel("ERROR") # hides errors from eyed3 package
+    screen = Interface(accepted_extensions, debug)
 
     # Getting path (in the directory of the program) 
     path = os.path.dirname(os.path.realpath(__file__))
-    antislash = "\ "
+    antislash = "\ " #adding antislash (not elegant but works)
     antislash=antislash[:1]
     path = path+antislash 
-    eyed3.log.setLevel("ERROR") # hides errors from eyed3 package
-
+    
     # getting the name of the prog
     prog_name = os.path.abspath(sys.argv[0])
     prog_name = prog_name[len(path):] #removing path from the file name
@@ -135,34 +213,39 @@ def main():
     with open(path+"config.json", mode="r") as j_object:
         config = json.load(j_object)
 
+    # no verifications (the user might make mistakes...)
     prefered_feat_acronyme = config["prefered_feat_sign"]
     default_genre          = config["default_genre"]      
     folder_name            = config["folder_name"] 
+    get_label              = config["get_label"]
+    get_bpm                = config["get_bpm"]
+    store_image_in_file    = config["store_image_in_file"]
 
 
-    print("Hello !")
-    if config["mode"] == 1 : # full auto
+    mode_nb = int(input("mode (1 is full auto, 2 is semi auto and 3 is discovery): "))
+    if mode_nb == 1 : # full auto
         All_Auto = True
         Assume_mep_is_right = True
         Open_image_auto = False
-        print("Mode : full auto")
-    elif config["mode"] == 2 : # semi auto
+        screen.display_start_prgm("full auto")
+    elif mode_nb == 2 : # semi auto
+
         All_Auto = False
         Assume_mep_is_right = True
         Open_image_auto = False
-        print("Mode : semi auto")
+        screen.display_start_prgm("semi auto")
     else :
-        config["mode"] = 3 # discovery
+        mode_nb = 3 # discovery
         All_Auto = False
         Assume_mep_is_right = False
         Open_image_auto = True
-        print("Mode : discovery")
+        screen.display_start_prgm("discovery")
 
 
     # Spotify api autorisation 
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id = config["client_id"],
                                                            client_secret = config["client_secret"]))
-    print("\n")
+
     while True :
 
         # ----------------------------------------------------------------------------------------------------------- #
@@ -194,26 +277,22 @@ def main():
 
             #saving total number
             total_file_nb = remaining_file_nb
-
-            # File found ?
+            
             if music_file_found :
                 state = 1 # get title and artist automatically
+
             elif wrong_format :
-                # Wrong format Display
-                print("the file '{}' is not in supported format" .format(wrong_file_name))
-                print("the supported formats are : ")
-                for i in range(0,len(accepted_extensions)):
-                    print(accepted_extensions[i])
+                screen.display_wrong_format(wrong_file_name)
                 time.sleep(4)
                 state = 10 
+
             else : # no file other than program and directory was found
                 state = 10
 
         # ----------------------------------------------------------------------------------------------------------- 1 #
         # STATE 1 : get title and artist automatically
         elif state == 1 : 
-            print("--------------------------------------------------------------------------")
-            print("file {} out of {} : '{}'".format(file_nb,total_file_nb,file_name[file_nb]))
+            screen.display_start_process(file_nb,total_file_nb,file_name[file_nb])
             temp_path = path + file_name[file_nb]
             
             # trying to see if there are correct tags
@@ -221,20 +300,19 @@ def main():
             tag = eyed3.id3.tag.Tag()
             tag.parse(fileobj=temp_path)
             
-            if str(type(tag.title)) != "<class 'NoneType'>" :
-                temp_title = remove_feat(tag.title)
+            if type(tag.title) != type(None) :
+                title = remove_feat(tag.title)
 
-                if str(type(tag.artist)) == "<class 'NoneType'>" or tag.artist == "None" :
-                    temp_artist = "not found"
+                if type(tag.artist) == type(None) or tag.artist == "None" :
+                    artist = "not found"
                 else : 
-                    temp_artist = tag.artist
+                    artist = tag.artist
                     
                 # Displays if at least the title was found
-                print("artist : {}".format(temp_artist))
-                print("title  : {}".format(temp_title))
+                screen.display_artist_and_title(artist,title)
                 
                 if tag.encoded_by == signature :
-                    print("file has already been treated with MEP")
+                    screen.display_already_treated()
                     if question_user("want to modify something ? "):
                         state = 2 # get title and artist 
 
@@ -244,16 +322,13 @@ def main():
 
 
                 elif question_user("Wrong ?"):
-                    print("Let's do it manually then !\n")
                     state = 2 # get title and artist manually  
 
                 else :
-                    title  = temp_title
-                    artist = temp_artist
                     state = 3 # search info on track (title and artist needed)
 
             else :
-                print ("no title found")
+                screen.display_no_title_found()
                 if All_Auto :
                     state = 20 # Skip track
                 else :
@@ -262,7 +337,8 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 2 #
         # STATE 2 : get title and artist manually
         elif state == 2 :
-        # getting the user to add title and artist
+            # getting the user to add title and artist
+            screen.display_get_title_manu()
             artist = input("artist name : ")
             title = input("track name  : ")
             # switch state
@@ -280,11 +356,6 @@ def main():
             
             # Can a result be found
             if len(items) > 0 :
-                 
-                
-                print("")
-                print("We have a match !")
-                print("")
                 Is_Sure = True
                 track = items[0]
                 track['album']['artwork'] = track['album']['images'][0]['url'] 
@@ -299,7 +370,6 @@ def main():
                 items = results['tracks']['items']
                 if len(items) > 0 :
                     Is_Sure = False
-                    print("\nexact track not found \nPotential track :")
                     track = items[0] 
                     track['album']['artwork'] = track['album']['images'][0]['url'] 
                     state = 32 # Getting genre (track object and title needed)
@@ -315,16 +385,13 @@ def main():
                     state = 31 # manual tagging
 
                 else:
-                    print("\n")
+                    # nothing could be done / wanted to be done
                     state = 20 # skip track
 
         # ----------------------------------------------------------------------------------------------------------- 31 #
         # STATE 31 : manual tagging
         elif state == 31 :
-
-            print("ok let's go !")
-            print("title  : " + title)
-            print("artist : " + artist)
+            screen.display_start_manual_tagging(artist, title)
 
             # init variables (if no track object was created before hand)
             track = {}
@@ -346,9 +413,9 @@ def main():
             track['album']['release_date'] =     input("year         : ")
             track['track_number']          = int(input("track number : "))
             track['album']['total_tracks'] = int(input("out of       : "))
-            #getting user to pick an artwork
             
-            track['album']['artwork']      = input("image url        : ")
+            #getting user to pick an artwork
+            track['album']['artwork']      =     input("image url    : ")
 
 
             # default stuff : might try to do other searches (with album for exemple) to complete those
@@ -358,17 +425,15 @@ def main():
             track['album']['label'] = ""
             track['bpm'] = 0 # default
 
-            print("\n Ok let's recap\n")
             state = 4 # user verification
 
         # ----------------------------------------------------------------------------------------------------------- 32 #
         # STATE 32 : Getting genre + other info auto
         elif state == 32 :
-            # genre
             results = sp.artist(track['artists'][0]['id'])
-            #pprint.pprint(results)
+            """pprint.pprint(results)
             for i in range(0,len(results['genres'])) :
-                print(results['genres'][i])
+                print(results['genres'][i]) #DEBUG"""
             if len(results['genres']) > 0:
                 track['genre'] = results['genres'][0]
             else :
@@ -399,26 +464,25 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 4 #
         # STATE 4 : User verification (track object and title needed)
         elif state == 4 :
-            # is there a featured artist ?
-            nb_artist = len(track['artists'])   
-            if nb_artist == 1 : # no feat
-                print("{} by {} :".format(track['name'], track['artists'][0]['name']))
 
-            else :# at least 1 feat
-                track['name'] = remove_feat(track['name'])
-                # 1 feat process
-                if nb_artist == 2 :
-                    print("{} by {} featuring {}".format(track['name'],track['artists'][0]['name'],track['artists'][1]['name'])) #display 
-                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+")" # correct title
-                # 2 feat or more process
-                else:
-                    print("{} by {} featuring {} & {}".format(track['name'],track['artists'][0]['name'],track['artists'][1]['name'],track['artists'][2]['name']))  #display
-                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+" & "+track['artists'][2]['name']+")"# correct title
+            track['name'] = remove_feat(track['name']) # in case of featurings
+
+            screen.display_track_infos(Is_Sure, title  = track['name'],
+                                                artists = track['artists'],
+                                                album   = track['album']['name'],
+                                                genre   = track['genre'], 
+                                                release_date = track['album']['release_date'],
+                                                track_nb = track['track_number'],
+                                                total_track_nb = track['album']['total_tracks'])
+
+            nb_artist = len(track['artists']) 
+            # the title incorporates the featured artists
+            if nb_artist == 2 :
+                track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+")" # correct title    
+            elif nb_artist > 2 :
+                track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+" & "+track['artists'][2]['name']+")"# correct title
             
-            # Display info
-            print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(track['album']['name'],track['genre'],track['album']['release_date'],track['track_number'],track['album']['total_tracks']))
-            
-            # displaying image
+            # displaying image TO CHANGE
             if Open_image_auto :
                 webbrowser.open(track['album']['artwork'])
 
@@ -451,65 +515,72 @@ def main():
             temp_path = path + file_name[file_nb]
             new_path = path + new_file_name
 
+            # downloading image
+            image_name = slugify(track['album']['name']+"_artwork")+".jpg"
+            image_path = get_file(track['album']['artwork'],image_name,path)
+
             # changing name of the file
             if os.path.exists(temp_path):
                 src = os.path.realpath(temp_path)
                 os.rename(temp_path,new_path)
-            else :
-                print("error : file missing from directory")
-            
-            # downloading file
-            image_name = slugify(track['album']['name']+"_artwork")+".jpg"
-            image_path = get_file(track['album']['artwork'],image_name,path)
-            
-            # modifing the tags
-            tag = eyed3.id3.tag.Tag()
-            if tag.parse(fileobj=new_path) : 
-                tag.title          = track['name']
-                tag.artist         = track['artists'][0]['name']
-                tag.genre          = track['genre']
-                tag.album          = track['album']['name']
-                tag.album_artist   = track['artists'][0]['name']
-                tag.track_num      = (track['track_number'],track['album']['total_tracks'])
-                tag.disc_num       = (track['disc_number'],None)
-                tag.bpm            = track['bpm']  
-                tag.publisher      = track['album']['label']
-                tag.copyright      = track['album']['copyright']
-                tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
-                if add_signature :
-                    tag.encoded_by     = signature  # Program signature
 
-                # works but no way to get info
-                #tag.composer = ""
-                
-                # doesn't work
-                #tag.lyrics = "Escalope pannée" # doenst work
-                # tag.artist_origin = "France" # doesent work + no easy way to get info
+                # modifing the tags
+                tag = eyed3.id3.tag.Tag()
+                if tag.parse(fileobj=new_path) : 
+                    tag.title          = track['name']
+                    tag.artist         = track['artists'][0]['name']
+                    tag.genre          = track['genre']
+                    tag.album          = track['album']['name']
+                    tag.album_artist   = track['artists'][0]['name']
+                    tag.track_num      = (track['track_number'],track['album']['total_tracks'])
+                    tag.disc_num       = (track['disc_number'],None)
+                    tag.bpm            = track['bpm']  
+                    tag.publisher      = track['album']['label']
+                    tag.copyright      = track['album']['copyright']
+                    tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
+                    if add_signature :
+                        tag.encoded_by = signature  # Program signature
 
-                if store_image_in_file :
-                    # read image into memory
-                    imagedata = open(image_path,"rb").read()
-
-                    # deleting previous artwork if present
-                    for i in range(0,len(tag.images)):
-                        tag.images.remove(tag.images[i].description)
-
-                    # append image to tags
-                    tag.images.set(3,imagedata,"image/jpeg",description=image_name)
+                    # works but no way to get info
+                    #tag.composer = ""
                     
-                    # removing image 
-                    os.remove(image_path) 
+                    # doesn't work
+                    #tag.lyrics = "Escalope pannée" # doenst work
+                    # tag.artist_origin = "France" # doesent work + no easy way to get info
 
-                else :
-                    # moving image in directory (or deleting if already present)
-                    if not os.path.exists(path+folder_name+antislash+image_name) : 
-                        shutil.move(image_path,path+folder_name) # place in first folder
-                    else :
-                        os.remove(image_path)
+                    if store_image_in_file :
+                        # read image into memory
+                        imagedata = open(image_path,"rb").read()
+
+                        # deleting previous artwork if present
+                        for i in range(0,len(tag.images)):
+                            tag.images.remove(tag.images[i].description)
+
+                        # append image to tags
+                        tag.images.set(3,imagedata,"image/jpeg",description=image_name)
                         
-                tag.save(encoding="utf-8")
+                        # removing image 
+                        os.remove(image_path) 
 
-            state = 6 # moving file
+                    else :
+                        # moving image in directory (or deleting if already present)
+                        if not os.path.exists(path+folder_name+antislash+image_name) : 
+                            shutil.move(image_path,path+folder_name) # place in first folder
+                        else :
+                            os.remove(image_path)
+                            
+                    tag.save(encoding="utf-8")
+                    state = 6 # moving file
+                else : 
+                    screen.display_error(1) # file couldn't be edited
+                    state = 20 #skipping file 
+            else :
+                screen.display_error(2) # file was moved
+                state = 20 # skipping file (because file was moved)
+
+            
+
+            
         
         # ----------------------------------------------------------------------------------------------------------- 6 #
         # STATE 6 : Moving file
@@ -521,7 +592,7 @@ def main():
                 shutil.move(new_path,path+folder_name) # place in first folder 
                 treated_file_nb += 1 # file correctly treated
             else :
-                print("File already present in folder !!!!")
+                screen.display_error(3) # file already present in folder
                 
             # changing state
             if remaining_file_nb > 1 :
@@ -547,7 +618,7 @@ def main():
         # STATE 10 : Ending program (or restarting)
         elif state == 10 :
 
-            if config["mode"] == 2 : 
+            if mode_nb == 2 : 
                 # reset variables
                 time.sleep(1)
                 file_extension = [".mp3"]
@@ -558,7 +629,10 @@ def main():
                 state = 0
 
             else :
-                input("{} files correctly processed out of {}".format(treated_file_nb,file_nb))
+                if not debug :
+                    input("{} files correctly processed out of {}".format(treated_file_nb,total_file_nb))
+                else : 
+                    print("{} files correctly processed out of {}".format(treated_file_nb,total_file_nb))
                 sys.exit("bye")
                 
             
