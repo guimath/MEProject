@@ -1,15 +1,13 @@
 {
-       
-    "_Mode_comment"      : "1 is full auto, 2 is semi auto and 3 is discovery",
-    "mode"               : 2,
-
-
     "_comment_folder"    : "all music will be moved to this folder once processed. Doesn't need to already exist (the program will create it if needed)",
     "folder_name"        : "music", 
-    "prefered_feat_sign" : "feat. ",
+    "prefered_feat_sign" : "feat.",
     "default_genre"      : "Other",
     
-
+    "get_label"          : true,
+    "get_bpm"            : true,
+    "store_image_in_file": true,
+    
 
 
 
@@ -31,7 +29,7 @@
     
 
 
-    "_comment_keys"          : "Please share with care those keys are private !",
+    "_comment_keys"          : "Please share with care ! those keys are private.",
     "client_id"              : "fb69ab85a5c749e08713458e85754515",
     "client_secret"          : "ebe33b7ed0cd495a8e91bc4032e9edf2"
 }
