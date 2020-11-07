@@ -110,42 +110,42 @@ class Interface :
         self._debug = debug 
         #will inherit from pyglet ?
         pass
-    def _display_split_indicator(self) :
+    def _split_indicator(self) :
         print("--------------------------------------------------------------------------")
 
-    def display_start_prgm(self, mode) :
+    def start_prgm(self, mode) :
         print("\nWelcome to MEProject !")
         print("mode : {}".format(mode))
         print("\n")
 
-    def display_wrong_format(self, wrong_file_name) :
+    def wrong_format(self, wrong_file_name) :
         print("the file '{}' is not in supported format" .format(wrong_file_name))
         print("the supported formats are : ")
         for i in range(0,len(accepted_extensions)):
             print(accepted_extensions[i])
 
-    def display_start_process(self, file_nb, total_file_nb, file_name) :
-        self._display_split_indicator()
+    def start_process(self, file_nb, total_file_nb, file_name) :
+        self._split_indicator()
         print("file {} out of {} : '{}'".format(file_nb,total_file_nb,file_name))
 
-    def display_artist_and_title(self, artist, title) : 
+    def artist_and_title(self, artist, title) : 
         print("artist : {}".format(artist))
         print("title  : {}".format(title))
 
-    def display_already_treated(self) : 
+    def already_treated(self) : 
         print("file has already been treated with MEP")
 
-    def display_get_title_manu(self) :
+    def get_title_manu(self) :
         print("Let's do it manually then !\n")
     
-    def display_no_title_found(self) :
+    def no_title_found(self) :
         print("no title found")
 
-    def display_start_manual_tagging(self, artist, title):
+    def start_manual_tagging(self, artist, title):
         print("ok let's go !")
-        self.display_artist_and_title(artist, title)
+        self.artist_and_title(artist, title)
 
-    def display_track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb) :
+    def track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb) :
         if Is_Sure :
             print("")
             print("We have a match !")
@@ -169,7 +169,7 @@ class Interface :
         print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(album,genre,release_date,track_nb,total_track_nb))
         # there would also be a picture display if all was great...
 
-    def display_error(self, error_nb) :
+    def error(self, error_nb) :
         print("file was skipped because of error n°{} :"+ error_nb)
         if error_nb == 1 :
             print("file couldn't be edited")
@@ -197,7 +197,7 @@ def main():
     artist = "" #temporary string to store artist name
     
     eyed3.log.setLevel("ERROR") # hides errors from eyed3 package
-    screen = Interface(accepted_extensions, debug)
+    interface = Interface(accepted_extensions, debug)
 
     # Getting path (in the directory of the program) 
     path = os.path.dirname(os.path.realpath(__file__))
@@ -227,19 +227,19 @@ def main():
         All_Auto = True
         Assume_mep_is_right = True
         Open_image_auto = False
-        screen.display_start_prgm("full auto")
+        interface.start_prgm("full auto")
     elif mode_nb == 2 : # semi auto
 
         All_Auto = False
         Assume_mep_is_right = True
         Open_image_auto = False
-        screen.display_start_prgm("semi auto")
+        interface.start_prgm("semi auto")
     else :
         mode_nb = 3 # discovery
         All_Auto = False
         Assume_mep_is_right = False
         Open_image_auto = True
-        screen.display_start_prgm("discovery")
+        interface.start_prgm("discovery")
 
 
     # Spotify api autorisation 
@@ -282,7 +282,7 @@ def main():
                 state = 1 # get title and artist automatically
 
             elif wrong_format :
-                screen.display_wrong_format(wrong_file_name)
+                interface.wrong_format(wrong_file_name)
                 time.sleep(4)
                 state = 10 
 
@@ -292,7 +292,7 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 1 #
         # STATE 1 : get title and artist automatically
         elif state == 1 : 
-            screen.display_start_process(file_nb,total_file_nb,file_name[file_nb])
+            interface.start_process(file_nb,total_file_nb,file_name[file_nb])
             temp_path = path + file_name[file_nb]
             
             # trying to see if there are correct tags
@@ -309,10 +309,10 @@ def main():
                     artist = tag.artist
                     
                 # Displays if at least the title was found
-                screen.display_artist_and_title(artist,title)
+                interface.artist_and_title(artist,title)
                 
                 if tag.encoded_by == signature :
-                    screen.display_already_treated()
+                    interface.already_treated()
                     if question_user("want to modify something ? "):
                         state = 2 # get title and artist 
 
@@ -328,7 +328,7 @@ def main():
                     state = 3 # search info on track (title and artist needed)
 
             else :
-                screen.display_no_title_found()
+                interface.no_title_found()
                 if All_Auto :
                     state = 20 # Skip track
                 else :
@@ -338,7 +338,7 @@ def main():
         # STATE 2 : get title and artist manually
         elif state == 2 :
             # getting the user to add title and artist
-            screen.display_get_title_manu()
+            interface.get_title_manu()
             artist = input("artist name : ")
             title = input("track name  : ")
             # switch state
@@ -391,7 +391,7 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 31 #
         # STATE 31 : manual tagging
         elif state == 31 :
-            screen.display_start_manual_tagging(artist, title)
+            interface.start_manual_tagging(artist, title)
 
             # init variables (if no track object was created before hand)
             track = {}
@@ -467,7 +467,7 @@ def main():
 
             track['name'] = remove_feat(track['name']) # in case of featurings
 
-            screen.display_track_infos(Is_Sure, title  = track['name'],
+            interface.track_infos(Is_Sure, title  = track['name'],
                                                 artists = track['artists'],
                                                 album   = track['album']['name'],
                                                 genre   = track['genre'], 
@@ -572,10 +572,10 @@ def main():
                     tag.save(encoding="utf-8")
                     state = 6 # moving file
                 else : 
-                    screen.display_error(1) # file couldn't be edited
+                    interface.error(1) # file couldn't be edited
                     state = 20 #skipping file 
             else :
-                screen.display_error(2) # file was moved
+                interface.error(2) # file was moved
                 state = 20 # skipping file (because file was moved)
 
             
@@ -592,7 +592,7 @@ def main():
                 shutil.move(new_path,path+folder_name) # place in first folder 
                 treated_file_nb += 1 # file correctly treated
             else :
-                screen.display_error(3) # file already present in folder
+                interface.error(3) # file already present in folder
                 
             # changing state
             if remaining_file_nb > 1 :
