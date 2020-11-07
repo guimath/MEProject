@@ -115,9 +115,8 @@ class Interface:
         else:
             return False
 
-    def _split_indicator(self):
-        print("--------------------------------------------------------------------------\n")
-
+    """ Welcoming user and getting mode
+        @return mode_nb the mode number (between 1 and 3) chosen by user """
     def global_start(self):
         mode_name = ['full auto', 'semi auto', 'discovery']
         print("")
@@ -135,51 +134,72 @@ class Interface:
         
         if mode_nb >= 3:
             mode_nb = 3
-            
         elif mode_nb <= 1:
             mode_nb = 1
-            self._params["all auto"] = False
+            self._params["all auto"] = True
+
         print("Now entering mode {}".format(mode_name[mode_nb-1]))
         print("\n")
         return mode_nb
 
-
+    """ error message for when user dropped a file in wrong format
+        Displays the name of file in wrong format and a list of accepted formats"""
     def wrong_format(self, wrong_file_name):
         print("the file '{}' is not in supported format" .format(wrong_file_name))
         print("the supported formats are : ")
         for i in range(0, len(accepted_extensions)):
             print(accepted_extensions[i])
 
+    """ Beginning of the process for a new file
+        Displays  what file is being treated"""
     def start_process(self, file_nb, total_file_nb, file_name):
-        self._split_indicator()
+        print("-------------------------------------------------------\n")
         print("file {} out of {} : '{}'".format(
             file_nb, total_file_nb, file_name))
 
+    """ Showing artist and title (reduced version of track_info)"""
     def artist_and_title(self, artist, title):
         print("artist : {}".format(artist))
         print("title  : {}".format(title))
 
+    """ error message : file already went through the system
+        is linked to an ask
+        """
     def already_treated(self):
         print("file has already been treated with MEP")
 
-    def get_title_manu(self):
-        print("Let's do it manually then !\n")
+    """ Getting title and artist from user
+        @return (artist, title) the info given by user 
+        """
+    def get_title_manu(self, reason= ""):
+        if reason != "" :
+            print(reason)
 
-    def no_title_found(self):
-        print("no title found")
+        print("Let's do it manually then !")
+        print("")
+        artist = input("artist name : ")
+        title = input("track name  : ")
+        return (artist, title)
 
-    def start_manual_tagging(self, artist, title):
+
+
+    def manual_tagging(self, artist, title):
         print("ok let's go !")
         self.artist_and_title(artist, title)
+        # will need to be expanded
 
+    """ Displaying info on the track
+        Visual might change depending on information"""
     def track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb):
         if Is_Sure:
             print("")
             print("We have a match !")
             print("")
         else:
-            print("\nexact track not found \nPotential track :")
-
+            print("")
+            print("exact track not found")
+            print("")
+            print("Potential track :")
         nb_artist = len(artists)
 
         # Basic infos :
@@ -199,6 +219,8 @@ class Interface:
             album, genre, release_date, track_nb, total_track_nb))
         # there would also be a picture display if all was great...
 
+    """ error message for when a file is skiped 
+        Displays error number and explication"""
     def error(self, error_nb):
         print("file was skipped because of error n°{} :" + error_nb)
         if error_nb == 1:
@@ -207,7 +229,13 @@ class Interface:
             print("file was moved during process")
         elif error_nb == 3:
             print("file already in the folder")
-
+        elif error_nb == 4:
+            print("file didn't have any usable tags")
+        elif error_nb == 5:
+            print("No matching track was found")
+    
+    """ Closing program when in full auto mode 
+        Gives litle summary of actions (nb of files processed out of total)"""
     def end_full_auto(self, total_file_nb, treated_file_nb) :
         """ Closing program when in full auto mode 
             Gives litle summary of actions (nb of files processed out of total)"""
@@ -366,19 +394,19 @@ def main():
                     state = 3  # search info on track (title and artist needed)
 
             else:
-                interface.no_title_found()
+                
                 if All_Auto:
+                    interface.error(4) # no usable tags
                     state = 20  # Skip track
                 else:
-                    state = 2  # get title and artist manually
+                    (artist, title) = interface.get_title_manu("no title found")
+                    state = 3  # search info on track
 
         # ----------------------------------------------------------------------------------------------------------- 2 #
-        # STATE 2 : get title and artist manually
+        # STATE 2 : get title and artist manually - MIGHT GET DELETED SOON
         elif state == 2:
             # getting the user to add title and artist
-            interface.get_title_manu()
-            artist = input("artist name : ")
-            title = input("track name  : ")
+            (artist, title) =interface.get_title_manu("")
             # switch state
             state = 3  # search info on track
 
@@ -428,7 +456,7 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 31 #
         # STATE 31 : manual tagging
         elif state == 31:
-            interface.start_manual_tagging(artist, title)
+            interface.manual_tagging(artist, title)
 
             # init variables (if no track object was created before hand)
             track = {}
@@ -537,6 +565,7 @@ def main():
             elif interface.ask("fill the data manually ?"):
                 state = 31
             else:
+                interface.error(5) # no matching track found
                 state = 20
 
         # ----------------------------------------------------------------------------------------------------------- 5 #
