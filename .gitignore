@@ -24,3 +24,6 @@ share/python-wheels/
 MANIFEST
 .vscode/
 
+# Specific to music files :
+*.mp3
+*.flac
