@@ -1,0 +1,11 @@
+{
+    "_comment_folder"    : "all music will be moved to this folder once processed. Doesn't need to already exist (the program will create it if needed)",
+    "folder_name"        : "music", 
+    "prefered_feat_sign" : "feat.",
+    "default_genre"      : "Other",
+    
+    "get_label"          : true,
+    "get_bpm"            : true,
+    "store_image_in_file": true
+    
+}

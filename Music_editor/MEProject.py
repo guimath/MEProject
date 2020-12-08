@@ -331,9 +331,9 @@ def main():
         Open_image_auto = True
 
 
-    # Spotify api autorisation
-    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id=config["client_id"],
-                                                               client_secret= config["client_secret"]))
+    # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
+    sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
+                                                               client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))
 
     while True:
 
