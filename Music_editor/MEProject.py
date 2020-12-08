@@ -75,20 +75,27 @@ def slugify(value):
 def get_file(file_url, filename, path):
     path = path + filename
     # Open the url image, set stream to True, this will return the stream content.
-    r = requests.get(file_url, stream=True)
+    try :
+        r = requests.get(file_url, stream=True)
 
-    # Check if the image was retrieved successfully
-    if r.status_code == 200:
-        # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
-        r.raw.decode_content = True
+        # Check if the image was retrieved successfully
+        if r.status_code == 200:
+            # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
+            r.raw.decode_content = True
 
-        # Open a local file with wb ( write binary ) permission.
-        with open(path, 'wb') as f:
-            shutil.copyfileobj(r.raw, f)
+            # Open a local file with wb ( write binary ) permission.
+            with open(path, 'wb') as f:
+                shutil.copyfileobj(r.raw, f)
 
-        return path
-    else:
-        return 0
+            return path
+        else:
+            print("image url can't be reached") # TODO add interface
+            return ""
+
+    except :
+        print("Error during image downloading") # TODO add interface
+        return ""
+        
 
 
 class Interface:
@@ -147,8 +154,8 @@ class Interface:
     def wrong_format(self, wrong_file_name):
         print("the file '{}' is not in supported format" .format(wrong_file_name))
         print("the supported formats are : ")
-        for i in range(0, len(accepted_extensions)):
-            print(accepted_extensions[i])
+        for i in range(0, len(self._param_accepted_extension)):
+            print(self._param_accepted_extension)
 
     """ Beginning of the process for a new file
         Displays  what file is being treated"""
@@ -222,17 +229,20 @@ class Interface:
     """ error message for when a file is skiped 
         Displays error number and explication"""
     def error(self, error_nb):
-        print("file was skipped because of error n°{} :" + error_nb)
+        print(    "---------------------------------")
+        print(    "| file was skipped | error n°{}  |".format(error_nb)) 
+        print(    "---------------------------------")
         if error_nb == 1:
-            print("file couldn't be edited")
+            print("|    file couldn't be edited    |")
         elif error_nb == 2:
-            print("file was moved during process")
+            print("| file was moved during process |")
         elif error_nb == 3:
-            print("file already in the folder")
+            print("|  file already in the folder   |")
         elif error_nb == 4:
-            print("file didn't have any usable tags")
+            print("| file didn't have usable tags  |")
         elif error_nb == 5:
-            print("No matching track was found")
+            print("|  No matching track was found  |")
+        print(    "---------------------------------\n")
     
     """ Closing program when in full auto mode 
         Gives litle summary of actions (nb of files processed out of total)"""
@@ -281,16 +291,28 @@ def main():
     prog_name = prog_name[len(path):]  # removing path from the file name
 
     # getting info from config file :
-    with open(path+"config.json", mode="r") as j_object:
-        config = json.load(j_object)
+    try:
+        with open(path+"config.json", mode="r") as j_object:
+            config = json.load(j_object)
+        
+        prefered_feat_acronyme = str (config["prefered_feat_sign"])
+        default_genre = str(config["default_genre"])
+        folder_name = str (config["folder_name"])
+        get_label = bool (config["get_label"])
+        get_bpm = bool (config["get_bpm"])
+        store_image_in_file = bool (config["store_image_in_file"])
 
-    # no verifications (the user might make mistakes...)
-    prefered_feat_acronyme = config["prefered_feat_sign"]
-    default_genre = config["default_genre"]
-    folder_name = config["folder_name"]
-    get_label = config["get_label"]
-    get_bpm = config["get_bpm"]
-    store_image_in_file = config["store_image_in_file"]
+    except FileNotFoundError:
+        print("No config file found -> using standard setup")
+        prefered_feat_acronyme = "feat."
+        default_genre = "Other"
+        folder_name = "music"
+        get_label = True
+        get_bpm = True
+        store_image_in_file = True
+    except :
+        print("unkown error") # TODO Do the print with interface
+    
 
     mode_nb = interface.global_start()
 
@@ -403,10 +425,10 @@ def main():
                     state = 3  # search info on track
 
         # ----------------------------------------------------------------------------------------------------------- 2 #
-        # STATE 2 : get title and artist manually - MIGHT GET DELETED SOON
+        # STATE 2 : get title and artist manually - TODO MIGHT GET DELETED SOON
         elif state == 2:
             # getting the user to add title and artist
-            (artist, title) =interface.get_title_manu("")
+            (artist, title) = interface.get_title_manu()
             # switch state
             state = 3  # search info on track
 
@@ -466,8 +488,8 @@ def main():
             # user filled data
             track['name'] = title
             track['artists'][0]['name'] = artist
-            webbrowser.open("https://www.google.com/search?q=" + \
-                            track['name']+"+"+track['artists'][0]['name'])
+            search = slugify("https://www.google.com/search?q=" + track['name'] + "+" + track['artists'][0]['name'])
+            webbrowser.open(search) #TODO check if working
 
             if interface.ask("more than one artist ?"):
                 track['artists'].append({'name': input("second artist : ")})
@@ -571,22 +593,24 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 5 #
         # STATE 5 : File update (track object needed)
         elif state == 5:
-            # making sure the file is writable :
-            os.chmod(path+file_name[file_nb], stat.S_IRWXU)
+            
+            try :
+                # making sure the file is writable : TODO Check if error can occur 
+                os.chmod(path+file_name[file_nb], stat.S_IRWXU)
 
-            # preparing new file name and directory path
-            new_file_name = track['name'] + "_" + track['artists'][0]['name']
-            new_file_name = slugify(new_file_name) + file_extension[file_nb]  # removing annoying characters and adding extension
+                # preparing new file name and directory path
+                new_file_name = track['name'] + "_" + track['artists'][0]['name']
+                new_file_name = slugify(new_file_name) + file_extension[file_nb]  # removing annoying characters and adding extension
 
-            temp_path = path + file_name[file_nb]
-            new_path = path + new_file_name
+                temp_path = path + file_name[file_nb]
+                new_path = path + new_file_name
 
-            # downloading image
-            image_name = slugify(track['album']['name']+"_artwork")+".jpg"
-            image_path = get_file(track['album']['artwork'], image_name, path)
-
-            # changing name of the file
-            if os.path.exists(temp_path):
+                # downloading image
+                
+                image_name = slugify(track['album']['name']+"_artwork")+".jpg"
+                image_path = get_file(track['album']['artwork'], image_name, path)
+            
+                # changing name of the file
                 src = os.path.realpath(temp_path)
                 os.rename(temp_path, new_path)
 
@@ -600,11 +624,16 @@ def main():
                     tag.album_artist = track['artists'][0]['name']
                     tag.track_num = (track['track_number'], track['album']['total_tracks'])
                     tag.disc_num = (track['disc_number'], None)
-                    tag.bpm = track['bpm']
-                    tag.publisher = track['album']['label']
-                    tag.copyright = track['album']['copyright']
-                    tag.recording_date = eyed3.core.Date.parse(
-                        track['album']['release_date'])
+                    tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
+
+                    
+                    try : 
+                        tag.bpm = track['bpm']
+                        tag.publisher = track['album']['label']
+                        tag.copyright = track['album']['copyright']
+                    except KeyError :
+                        pass
+
                     if add_signature:
                         tag.encoded_by = signature  # Program signature
 
@@ -612,38 +641,43 @@ def main():
                     # tag.composer = ""
 
                     # doesn't work
-                    # tag.lyrics = "Escalope pannée" # doenst work
+                    # tag.lyrics = "Escalope pannée" # doenst work + no easy way to get info
                     # tag.artist_origin = "France" # doesent work + no easy way to get info
 
-                    if store_image_in_file:
-                        # read image into memory
-                        imagedata = open(image_path, "rb").read()
+                    # image
+                    if (image_path != "") : 
+                        if store_image_in_file :
+                            # read image into memory
+                            imagedata = open(image_path, "rb").read()
 
-                        # deleting previous artwork if present
-                        for i in range(0, len(tag.images)):
-                            tag.images.remove(tag.images[i].description)
+                            # deleting previous artwork if present
+                            for i in range(0, len(tag.images)):
+                                tag.images.remove(tag.images[i].description)
 
-                        # append image to tags
-                        tag.images.set(3, imagedata, "image/jpeg",description=image_name)
+                            # append image to tags
+                            tag.images.set(3, imagedata, "image/jpeg",description=image_name)
 
-                        # removing image
-                        os.remove(image_path)
-
-                    else:
-                        # moving image in directory (or deleting if already present)
-                        if not os.path.exists(path+folder_name+antislash+image_name):
-                            shutil.move(image_path, path+folder_name)  # place in first folder
-                        else:
+                            # removing image from folder
                             os.remove(image_path)
+
+                        else:
+                            # moving image in directory (or deleting if already present)
+                            if not os.path.exists(path+folder_name+antislash+image_name):
+                                shutil.move(image_path, path+folder_name)  # place in first folder
+                            else:
+                                os.remove(image_path)
 
                     tag.save(encoding="utf-8")
                     state = 6  # moving file
-                else:
-                    interface.error(1)  # file couldn't be edited
-                    state = 20  # skipping file
-            else:
+
+            except FileNotFoundError :
                 interface.error(2)  # file was moved
-                state = 20  # skipping file (because file was moved)
+                #interface.error(1)  # file couldn't be edited
+                state = 20  # skipping file          
+                
+            
+                
+                #state = 20  # skipping file (because file was moved)
 
         # ----------------------------------------------------------------------------------------------------------- 6 #
         # STATE 6 : Moving file
@@ -651,11 +685,17 @@ def main():
             # moving file
 
             new_path = path + new_file_name
-            if not os.path.exists(path+folder_name+antislash+new_file_name):
-                shutil.move(new_path, path+folder_name) # place in first folder
-                treated_file_nb += 1  # file correctly treated
-            else:
+
+            try :
+                if os.path.exists(path+folder_name+antislash+new_file_name):
+                    raise Exception()
+                else :
+                    shutil.move(new_path, path+folder_name) # place in first folder
+                    treated_file_nb += 1  # file correctly treated
+            except Exception as inst:
                 interface.error(3)  # file already present in folder
+            except :
+                print("Unexpected error:", sys.exc_info()[0])
 
             # changing state
             if remaining_file_nb > 1:
