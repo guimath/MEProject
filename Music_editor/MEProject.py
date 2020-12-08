@@ -103,6 +103,7 @@ class Interface:
 
     def __init__(self, accepted_extensions, debug):
         # storing a few parameters
+        self._ignore = ["MEProject.exe"]
         self._param_accepted_extension = accepted_extensions
         self._params = {}
         self._params["debug"] = debug
@@ -152,10 +153,12 @@ class Interface:
     """ error message for when user dropped a file in wrong format
         Displays the name of file in wrong format and a list of accepted formats"""
     def wrong_format(self, wrong_file_name):
-        print("the file '{}' is not in supported format" .format(wrong_file_name))
-        print("the supported formats are : ")
-        for i in range(0, len(self._param_accepted_extension)):
-            print(self._param_accepted_extension)
+        if (wrong_file_name not in self._ignore):
+            print("the file '{}' is not in supported format" .format(wrong_file_name))
+            print("the supported formats are : ")
+            for i in range(0, len(self._param_accepted_extension)):
+                print(self._param_accepted_extension[i])
+            self._ignore.append(wrong_file_name)
 
     """ Beginning of the process for a new file
         Displays  what file is being treated"""
@@ -272,6 +275,7 @@ def main():
     debug = True
     Is_Sure = True  # to check wether a file needs to be checked by user
     accepted_extensions = [".mp3"]  # list of all accepted extensions
+    not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
     file_extension = [".mp3"]   # will store all file extensions
     file_name = ["music.mp3"]   # will store all file names
     title = ""  # temporary string to store track title
@@ -335,6 +339,7 @@ def main():
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
                                                                client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))
 
+
     while True:
 
         # ----------------------------------------------------------------------------------------------------------- #
@@ -356,7 +361,7 @@ def main():
                 elif temp_file_name == folder_name:
                     folder_found = True
 
-                elif (temp_file_name != prog_name) and (temp_file_extension != "") and (temp_file_extension != ".json"):
+                elif (temp_file_extension in not_supported_extension):
                     wrong_format = True
                     wrong_file_name = temp_file_name
 
