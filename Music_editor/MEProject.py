@@ -23,6 +23,8 @@ import webbrowser  # to open url in browser
 import spotipy  # Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 
+
+
 # for debug only
 # import pprint
 
@@ -41,60 +43,58 @@ file_nb = 1
 state = 0
 All_Auto = bool
 
+class MEP:
+    def __init__(self, interface, debug):
+        self.debug = debug
+        self.interface = interface
+
+    # Removes the "'feat." type from the title
+    # @returns corrected title
+    def remove_feat(self, title):
+        if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
+            # complicated in case there is anothere paranthesis in the title
+            b = []
+            b = title.split("(")
+            title = b[0]
+            for i in range(1, len(b)-1):
+                title = title + "(" + b[i]
+        return title.strip()
 
 
+    # removes unwanted characteres to make the name file friendly
+    # @return value the correcter string
+    def slugify(self, value):
+        value = unicodedata.normalize('NFKC', value)
+        value = re.sub(r'[^\w\s-]', '', value).strip().lower()
+        value = re.sub(r'[-\s]+', '-', value)
 
+        return value
 
+        # Downloading picture from specified url as specified filename to specified path
+        # @returns the complete path of the new downloaded file if worked correctly, else returns 0
+        def get_file(self, file_url, filename, path):
+            path = path + filename
+            # Open the url image, set stream to True, this will return the stream content.
+            try :
+                r = requests.get(file_url, stream=True)
 
-# Removes the "'feat." type from the title
-# @returns corrected title
-def remove_feat(title):
-    if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
-        # complicated in case there is anothere paranthesis in the title
-        b = []
-        b = title.split("(")
-        title = b[0]
-        for i in range(1, len(b)-1):
-            title = title + "(" + b[i]
-    return title.strip()
+                # Check if the image was retrieved successfully
+                if r.status_code == 200:
+                    # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
+                    r.raw.decode_content = True
 
+                    # Open a local file with wb ( write binary ) permission.
+                    with open(path, 'wb') as f:
+                        shutil.copyfileobj(r.raw, f)
 
-# removes unwanted characteres to make the name file friendly
-# @return value the correcter string
-def slugify(value):
-    value = unicodedata.normalize('NFKC', value)
-    value = re.sub(r'[^\w\s-]', '', value).strip().lower()
-    value = re.sub(r'[-\s]+', '-', value)
+                    return path
+                else:
+                    self.interface.warning("image url can't be reached", "not adding image to file") 
+                    return ""
 
-    return value
-
-# Downloading picture from specified url as specified filename to specified path
-# @returns the complete path of the new downloaded file if worked correctly, else returns 0
-
-
-def get_file(file_url, filename, path):
-    path = path + filename
-    # Open the url image, set stream to True, this will return the stream content.
-    try :
-        r = requests.get(file_url, stream=True)
-
-        # Check if the image was retrieved successfully
-        if r.status_code == 200:
-            # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
-            r.raw.decode_content = True
-
-            # Open a local file with wb ( write binary ) permission.
-            with open(path, 'wb') as f:
-                shutil.copyfileobj(r.raw, f)
-
-            return path
-        else:
-            print("image url can't be reached") # TODO add interface
-            return ""
-
-    except :
-        print("Error during image downloading") # TODO add interface
-        return ""
+            except :
+                self.interface.warning("image downloading failed", "not adding image to file") 
+                return ""
         
 
 
@@ -113,11 +113,12 @@ class Interface:
     """ Asking user a yes no question 
         @param message the string to be displayed as a question
         @return True or False (depending on user response) """
-    def ask(self, message):
+    def ask(self, message, reason = ""):
         if self._params["all auto"]:
             return False
-
-        ans = input("-> "+ message+" (y for yes n for no) : ")
+        if (reason != ""):
+            print(reason)
+        ans = input("-> " + message + " (y/n) : ")
         if ans == 'y' or ans == 'Y':
             return True
         else:
@@ -246,6 +247,9 @@ class Interface:
         elif error_nb == 5:
             print("|  No matching track was found  |")
         print(    "---------------------------------\n")
+
+    def warning(self, problem, solution):
+        print("[WARNING] " + problem + " -> " + solution )
     
     """ Closing program when in full auto mode 
         Gives litle summary of actions (nb of files processed out of total)"""
@@ -272,7 +276,7 @@ def main():
     signature = "MEP by GM"
 
     # Variable initialization
-    debug = True
+    debug = False
     Is_Sure = True  # to check wether a file needs to be checked by user
     accepted_extensions = [".mp3"]  # list of all accepted extensions
     not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
@@ -283,6 +287,7 @@ def main():
 
     eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
     interface = Interface(accepted_extensions, debug)
+    mep = MEP(interface, debug)
 
     # Getting path (in the directory of the program)
     path = os.path.dirname(os.path.realpath(__file__))
@@ -307,16 +312,31 @@ def main():
         store_image_in_file = bool (config["store_image_in_file"])
 
     except FileNotFoundError:
-        print("No config file found -> using standard setup")
+        interface.warning("No config file found", "using standard setup")  # TODO make ti better
         prefered_feat_acronyme = "feat."
         default_genre = "Other"
         folder_name = "music"
         get_label = True
         get_bpm = True
         store_image_in_file = True
-    except :
-        print("unkown error") # TODO Do the print with interface
+
+    except json.JSONDecodeError as e:
+        interface.warning("At line " + str(e.lineno)+ " of the config file, bad syntax (" + str(e.msg) + ")", "using standard setup") 
+        prefered_feat_acronyme = "feat."
+        default_genre = "Other"
+        folder_name = "music"
+        get_label = True
+        get_bpm = True
+        store_image_in_file = True
     
+    except Exception as e :
+        interface.warning("unknown error : " + str(e.msg) , "using standard setup")
+        prefered_feat_acronyme = "feat."
+        default_genre = "Other"
+        folder_name = "music"
+        get_label = True
+        get_bpm = True
+        store_image_in_file = True
 
     mode_nb = interface.global_start()
 
@@ -395,7 +415,7 @@ def main():
             tag.parse(fileobj=temp_path)
 
             if type(tag.title) != type(None):
-                title = remove_feat(tag.title)
+                title = mep.remove_feat(tag.title)
 
                 if type(tag.artist) == type(None) or tag.artist == "None":
                     artist = "not found"
@@ -408,14 +428,18 @@ def main():
                 if tag.encoded_by == signature:
                     interface.already_treated()
                     if interface.ask("want to modify something ? "):
-                        state = 2  # get title and artist
+                        # getting the user to add title and artist
+                        (artist, title) = interface.get_title_manu()
+                        state = 3  # search info on track (title and artist needed)
 
                     else:
                         new_file_name = file_name[file_nb]
                         state = 6  # just moving the file in correct directory
 
                 elif interface.ask("Wrong ?"):
-                    state = 2  # get title and artist manually
+                    # getting the user to add title and artist
+                    (artist, title) = interface.get_title_manu()
+                    state = 3  # search info on track (title and artist needed)
 
                 else:
                     state = 3  # search info on track (title and artist needed)
@@ -428,14 +452,6 @@ def main():
                 else:
                     (artist, title) = interface.get_title_manu("no title found")
                     state = 3  # search info on track
-
-        # ----------------------------------------------------------------------------------------------------------- 2 #
-        # STATE 2 : get title and artist manually - TODO MIGHT GET DELETED SOON
-        elif state == 2:
-            # getting the user to add title and artist
-            (artist, title) = interface.get_title_manu()
-            # switch state
-            state = 3  # search info on track
 
         # ----------------------------------------------------------------------------------------------------------- 3 #
         # STATE 3 : Search info on track
@@ -470,8 +486,9 @@ def main():
                 elif All_Auto:
                     state = 20  # skip track
 
-                elif interface.ask("error 808 : music not found... \nDo you want to retry with another spelling ?"):
-                    state = 2  # get title and artist manually
+                elif interface.ask(reason = "error 808 : music not found..." , message = "Do you want to retry with another spelling ?"):
+                    (artist, title) = interface.get_title_manu("")
+                    state = 3  # search info on track
 
                 elif interface.ask("Fill the data manually ?"):
                     state = 31  # manual tagging
@@ -493,8 +510,8 @@ def main():
             # user filled data
             track['name'] = title
             track['artists'][0]['name'] = artist
-            search = slugify("https://www.google.com/search?q=" + track['name'] + "+" + track['artists'][0]['name'])
-            webbrowser.open(search) #TODO check if working
+            search = "https://www.google.com/search?q=" + mep.slugify(track['name']) + "+" + mep.slugify(track['artists'][0]['name'])
+            webbrowser.open(search) 
 
             if interface.ask("more than one artist ?"):
                 track['artists'].append({'name': input("second artist : ")})
@@ -505,18 +522,21 @@ def main():
 
             track['album']['name'] = input("album        : ")
             track['album']['release_date'] = input("year         : ")
-            track['track_number'] = int(input("track number : "))
+            track['track_number'] = int(input("track number : "))   # TODO add szecurity (check if its int) error : ValueError:
             track['album']['total_tracks'] = int(input("out of       : "))
 
             # getting user to pick an artwork
             track['album']['artwork'] = input("image url    : ")
 
-            # default stuff : might try to do other searches (with album for exemple) to complete those
+            # TODO default stuff : might try to do other searches (with album for exemple) to complete those
             track['disc_number'] = None
             track['genre'] = default_genre
-            track['album']['copyright'] = ""
-            track['album']['label'] = ""
-            track['bpm'] = 0  # default
+
+            if get_label :
+                track['album']['copyright'] = None
+                track['album']['label'] = None
+            if get_bpm : 
+                track['bpm'] = None  # default
 
             state = 4  # user verification
 
@@ -557,7 +577,7 @@ def main():
         # STATE 4 : User verification (track object and title needed)
         elif state == 4:
 
-            track['name'] = remove_feat(track['name'])  # in case of featurings
+            track['name'] = mep.remove_feat(track['name'])  # in case of featurings
 
             interface.track_infos(Is_Sure, title=track['name'],
                                   artists= track['artists'],
@@ -587,7 +607,8 @@ def main():
                 state = 5  # file update (track object needed)
 
             elif interface.ask("Do you want to retry with another spelling ?"):
-                state = 2  # get title and artist manually
+                (artist, title) = interface.get_title_manu("")
+                state = 3  # search info on track
 
             elif interface.ask("fill the data manually ?"):
                 state = 31
@@ -605,15 +626,15 @@ def main():
 
                 # preparing new file name and directory path
                 new_file_name = track['name'] + "_" + track['artists'][0]['name']
-                new_file_name = slugify(new_file_name) + file_extension[file_nb]  # removing annoying characters and adding extension
+                new_file_name = mep.slugify(new_file_name) + file_extension[file_nb]  # removing annoying characters and adding extension
 
                 temp_path = path + file_name[file_nb]
                 new_path = path + new_file_name
 
                 # downloading image
                 
-                image_name = slugify(track['album']['name']+"_artwork")+".jpg"
-                image_path = get_file(track['album']['artwork'], image_name, path)
+                image_name = mep.slugify(track['album']['name']+"_artwork")+".jpg"
+                image_path = mep.get_file(track['album']['artwork'], image_name, path)
             
                 # changing name of the file
                 src = os.path.realpath(temp_path)
@@ -621,7 +642,7 @@ def main():
 
                 # modifing the tags
                 tag = eyed3.id3.tag.Tag()
-                if tag.parse(fileobj=new_path):
+                if tag.parse(fileobj = new_path):
                     tag.title = track['name']
                     tag.artist = track['artists'][0]['name']
                     tag.genre = track['genre']
@@ -634,9 +655,13 @@ def main():
                     
                     try : 
                         tag.bpm = track['bpm']
+                    except KeyError : # infos not found or not searched
+                        pass
+                    
+                    try :
                         tag.publisher = track['album']['label']
                         tag.copyright = track['album']['copyright']
-                    except KeyError :
+                    except KeyError : # infos not found or not searched
                         pass
 
                     if add_signature:
@@ -677,12 +702,10 @@ def main():
 
             except FileNotFoundError :
                 interface.error(2)  # file was moved
-                #interface.error(1)  # file couldn't be edited
                 state = 20  # skipping file          
-                
-            
-                
-                #state = 20  # skipping file (because file was moved)
+            except Exception as e :
+                interface.error(1) # file couldn't be edited
+                state = 20  # skipping file 
 
         # ----------------------------------------------------------------------------------------------------------- 6 #
         # STATE 6 : Moving file
@@ -693,14 +716,14 @@ def main():
 
             try :
                 if os.path.exists(path+folder_name+antislash+new_file_name):
-                    raise Exception()
+                    interface.warning("file already exists in folder", "keeping this file in main folder")
                 else :
-                    shutil.move(new_path, path+folder_name) # place in first folder
                     treated_file_nb += 1  # file correctly treated
-            except Exception as inst:
-                interface.error(3)  # file already present in folder
-            except :
-                print("Unexpected error:", sys.exc_info()[0])
+                    shutil.move(new_path, path+folder_name) # place in first folder
+                    
+            except Exception as e:
+                interface.warning("Unexpected error:", sys.exc_info()[0], "keeping this file in main folder")
+                
 
             # changing state
             if remaining_file_nb > 1:
