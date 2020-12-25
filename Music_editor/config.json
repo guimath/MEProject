@@ -5,31 +5,8 @@
     "default_genre"      : "Other",
     
     "get_label"          : true,
-    "get_bpm"            : true,
-    "store_image_in_file": true,
+    "get_bpm"            : false,
+    "store_image_in_file": true
     
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-    "_comment_keys"          : "Please share with care ! those keys are private.",
-    "client_id"              : "fb69ab85a5c749e08713458e85754515",
-    "client_secret"          : "ebe33b7ed0cd495a8e91bc4032e9edf2"
 }
