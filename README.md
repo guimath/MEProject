@@ -7,7 +7,6 @@ It is designed to make downloading music and reorganising your music library eas
 
 If you just want to use it, you can get the .exe/.app  version that won't require any software install (you can skip required paragraph)
 
-If you want to look at/modify the code you can keep reading :
 **Required :** To work properly, python V3 is needed. You'll also need a few packages : 
 * `eyed3` : music tag editor
 * `spotipy` : spotify api
