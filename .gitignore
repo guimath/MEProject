@@ -23,4 +23,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 .vscode/
+*.spec
 
+# Specific to music files :
+*.mp3
+*.flac
