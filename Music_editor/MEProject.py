@@ -45,7 +45,7 @@ All_Auto = bool
 
 class MEP:
     def __init__(self, interface, debug):
-        self.debug = debug
+        self.debug     = debug
         self.interface = interface
 
     # Removes the "'feat." type from the title
@@ -70,31 +70,31 @@ class MEP:
 
         return value
 
-        # Downloading picture from specified url as specified filename to specified path
-        # @returns the complete path of the new downloaded file if worked correctly, else returns 0
-        def get_file(self, file_url, filename, path):
-            path = path + filename
-            # Open the url image, set stream to True, this will return the stream content.
-            try :
-                r = requests.get(file_url, stream=True)
+    # Downloading picture from specified url as specified filename to specified path
+    # @returns the complete path of the new downloaded file if worked correctly, else returns 0
+    def get_file(self, file_url, filename, path):
+        path = path + filename
+        # Open the url image, set stream to True, this will return the stream content.
+        try:
+            r = requests.get(file_url, stream=True)
 
-                # Check if the image was retrieved successfully
-                if r.status_code == 200:
-                    # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
-                    r.raw.decode_content = True
+            # Check if the image was retrieved successfully
+            if r.status_code == 200:
+                # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
+                r.raw.decode_content = True
 
-                    # Open a local file with wb ( write binary ) permission.
-                    with open(path, 'wb') as f:
-                        shutil.copyfileobj(r.raw, f)
+                # Open a local file with wb ( write binary ) permission.
+                with open(path, 'wb') as f:
+                    shutil.copyfileobj(r.raw, f)
 
-                    return path
-                else:
-                    self.interface.warning("image url can't be reached", "not adding image to file") 
-                    return ""
-
-            except :
-                self.interface.warning("image downloading failed", "not adding image to file") 
+                return path
+            else:
+                self.interface.warning("image url can't be reached", "not adding image to file")
                 return ""
+
+        except:
+            self.interface.warning("image downloading failed", "not adding image to file")
+            return ""
         
 
 
@@ -361,7 +361,7 @@ def main():
 
 
     while True:
-
+        #print("STATE : "+str(state)) #DEBUG
         # ----------------------------------------------------------------------------------------------------------- #
         # STATE 0 : Scanning folder
         if state == 0:
@@ -424,6 +424,7 @@ def main():
 
                 # Displays if at least the title was found
                 interface.artist_and_title(artist, title)
+                
 
                 if tag.encoded_by == signature:
                     interface.already_treated()
@@ -452,6 +453,7 @@ def main():
                 else:
                     (artist, title) = interface.get_title_manu("no title found")
                     state = 3  # search info on track
+            
 
         # ----------------------------------------------------------------------------------------------------------- 3 #
         # STATE 3 : Search info on track
@@ -482,20 +484,20 @@ def main():
                     track['album']['artwork'] = track['album']['images'][0]['url']
                     state = 32  # Getting genre (track object and title needed)
 
-                # music not found -> switch state
-                elif All_Auto:
-                    state = 20  # skip track
+            # music not found -> switch state
+            elif All_Auto:
+                state = 20  # skip track
 
-                elif interface.ask(reason = "error 808 : music not found..." , message = "Do you want to retry with another spelling ?"):
-                    (artist, title) = interface.get_title_manu("")
-                    state = 3  # search info on track
+            elif interface.ask(reason = "error 808 : music not found..." , message = "Do you want to retry with another spelling ?"):
+                (artist, title) = interface.get_title_manu("")
+                state = 3  # search info on track
 
-                elif interface.ask("Fill the data manually ?"):
-                    state = 31  # manual tagging
+            elif interface.ask("Fill the data manually ?"):
+                state = 31  # manual tagging
 
-                else:
-                    # nothing could be done / wanted to be done
-                    state = 20  # skip track
+            else:
+                # nothing could be done / wanted to be done
+                state = 20  # skip track
 
         # ----------------------------------------------------------------------------------------------------------- 31 #
         # STATE 31 : manual tagging
