@@ -3,7 +3,8 @@
 import os
 import sys   # to get the name of the prog file
 import time  # for sleep function
-from pathlib import Path  # to get path to directory
+from pathlib import Path # to get path to directory
+from bs4 import BeautifulSoup  # to get lyrics (crawler)
 
 # for file modification
 import eyed3  # to parse mp3 files
@@ -95,7 +96,35 @@ class MEP:
         except:
             self.interface.warning("image downloading failed", "not adding image to file")
             return ""
+
+    def _genius(self, artist, title):
+        url = ""
+        lyrics = "Error1"
+        try:
+            url = "http://genius.com/%s-%s-lyrics" % (artist.replace(' ', '-'), title.replace(' ', '-'))
+            lyrics_page = requests.get(url)
+            soup = BeautifulSoup(lyrics_page.text, 'html.parser')
+            lyrics_container = soup.find("div", {"class": "lyrics"})
+            if lyrics_container:
+                lyrics = lyrics_container.get_text()
+                if artist.lower().replace(" ", "") not in soup.text.lower().replace(" ", ""):
+                    lyrics = "Error2"
+        except Exception as error:
+            print(error)
+        return lyrics
+
+    def get_lyrics(self, artist, title):
+        #slugify both
+        lyrics = self._genius(artist, title)
+        if lyrics == "Error1" :
+            print("warning no lyrics found")
+            return ""
+        elif lyrics == "Error2" :
+            print("unkown error with lyrics")
+            return ""
         
+        return lyrics
+            
 
 
 class Interface:
@@ -309,6 +338,7 @@ def main():
         folder_name = str (config["folder_name"])
         get_label = bool (config["get_label"])
         get_bpm = bool (config["get_bpm"])
+        get_lyrics = bool (config["get_lyrics"])
         store_image_in_file = bool (config["store_image_in_file"])
 
     except FileNotFoundError:
@@ -318,6 +348,7 @@ def main():
         folder_name = "music"
         get_label = True
         get_bpm = True
+        get_lyrics = True
         store_image_in_file = True
 
     except json.JSONDecodeError as e:
@@ -327,6 +358,7 @@ def main():
         folder_name = "music"
         get_label = True
         get_bpm = True
+        get_lyrics = True
         store_image_in_file = True
     
     except Exception as e :
@@ -336,6 +368,7 @@ def main():
         folder_name = "music"
         get_label = True
         get_bpm = True
+        get_lyrics = True
         store_image_in_file = True
 
     mode_nb = interface.global_start()
@@ -392,9 +425,8 @@ def main():
             # saving total number
             total_file_nb = remaining_file_nb
 
-            if music_file_found:
+            if music_file_found :
                 state = 1  # get title and artist automatically
-
             elif wrong_format:
                 interface.wrong_format(wrong_file_name)
                 time.sleep(4)
@@ -573,6 +605,11 @@ def main():
                 else:
                     track['bpm'] = 0  # default
 
+            #getting lyrics 
+            if get_lyrics: 
+                track['lyrics'] = """ """
+                track['lyrics'] = mep.get_lyrics(track['artists'][0]['name'], track['name'])
+
             state = 4
 
         # ----------------------------------------------------------------------------------------------------------- 4 #
@@ -659,7 +696,13 @@ def main():
                     tag.track_num = (track['track_number'], track['album']['total_tracks'])
                     tag.disc_num = (track['disc_number'], None)
                     tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
-
+                    
+                    try : 
+                        if track['lyrics'] != "":
+                            tag.lyrics.set("""{}""".format(track['lyrics']))
+                    except KeyError : # infos not found or not searched
+                        pass
+                    
                     
                     try : 
                         tag.bpm = track['bpm']
@@ -679,7 +722,7 @@ def main():
                     # tag.composer = ""
 
                     # doesn't work
-                    # tag.lyrics = "Escalope pannée" # doenst work + no easy way to get info
+                    #  # doenst work + no easy way to get info
                     # tag.artist_origin = "France" # doesent work + no easy way to get info
 
                     # image
