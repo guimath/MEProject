@@ -1,6 +1,8 @@
 # -*-coding:utf-8 -*
 
 import os
+
+
 import sys   # to get the name of the prog file
 import time  # for sleep function
 from pathlib import Path # to get path to directory
@@ -13,11 +15,12 @@ import shutil  # to move file
 import stat   # to change read/write file status
 
 # to 'slugify' string
+from slugify import slugify 
 import re
-import unicodedata
+import codecs
 
 # for image
-import requests   # to get image from the web
+import requests   # to get image from the web + for webscrapping
 import webbrowser  # to open url in browser
 
 # for spotify api
@@ -61,7 +64,7 @@ class MEP:
                 title = title + "(" + b[i]
         return title.strip()
 
-
+    """ 
     # removes unwanted characteres to make the name file friendly
     # @return value the correcter string
     def slugify(self, value):
@@ -69,7 +72,7 @@ class MEP:
         value = re.sub(r'[^\w\s-]', '', value).strip().lower()
         value = re.sub(r'[-\s]+', '-', value)
 
-        return value
+        return value"""
 
     # Downloading picture from specified url as specified filename to specified path
     # @returns the complete path of the new downloaded file if worked correctly, else returns 0
@@ -96,6 +99,45 @@ class MEP:
         except:
             self.interface.warning("image downloading failed", "not adding image to file")
             return ""
+    def _musixmatch(self, artist, title):
+  
+        url = ""
+        lyrics = "Error1"
+
+        def extract_mxm_props(soup_page):
+            scripts = soup_page.find_all("script")
+            props_script = None
+            for script in scripts:
+                if script and script.contents and "__mxmProps" in script.contents[0]:
+                    props_script = script
+                    break
+            return props_script.contents[0]
+
+        try:
+            search_url = "https://www.musixmatch.com/search/%s-%s/tracks" % (
+                artist.replace(' ', '-'), title.replace(' ', '-'))
+            header = {"User-Agent": "curl/7.9.8 (i686-pc-linux-gnu) libcurl 7.9.8 (OpenSSL 0.9.6b) (ipv6 enabled)"}
+            search_results = requests.get(search_url, headers=header)
+            soup = BeautifulSoup(search_results.text, 'html.parser')
+            page = re.findall('"track_share_url":"([^"]*)', extract_mxm_props(soup))
+            if page:
+                url = codecs.decode(page[0], 'unicode-escape')
+                lyrics_page = requests.get(url, headers=header)
+                soup = BeautifulSoup(lyrics_page.text, 'html.parser')
+                props = extract_mxm_props(soup)
+                if '"body":"' in props:
+                    lyrics = props.split('"body":"')[1].split('","language"')[0]
+                    lyrics = lyrics.replace("\\n", "\n")
+                    lyrics = lyrics.replace("\\", "")
+                    if not lyrics.strip():
+                        lyrics = "Error1"
+                    album = soup.find(class_="mxm-track-footer__album")
+                    if album:
+                        album = album.find(class_="mui-cell__title").getText()
+        except Exception as error:
+            print(error)
+            lyrics = "Error2"
+        return lyrics
 
     def _genius(self, artist, title):
         url = ""
@@ -115,14 +157,17 @@ class MEP:
 
     def get_lyrics(self, artist, title):
         #slugify both
-        lyrics = self._genius(artist, title)
+        title = slugify(title.replace("'",""))
+        artist = slugify(artist.replace("'",""))
+        lyrics = self._musixmatch(artist, title)
         if lyrics == "Error1" :
-            print("warning no lyrics found")
-            return ""
+            print("2nd try")
+            lyrics = self._genius(artist, title)
+            if lyrics == "Error1" :
+                return ""
+
         elif lyrics == "Error2" :
-            print("unkown error with lyrics")
             return ""
-        
         return lyrics
             
 
@@ -230,7 +275,7 @@ class Interface:
 
     """ Displaying info on the track
         Visual might change depending on information"""
-    def track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb):
+    def track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb,found_lyrics):
         if Is_Sure:
             print("")
             print("We have a match !")
@@ -255,8 +300,13 @@ class Interface:
                 title, artists[0]['name'], artists[1]['name'], artists[2]['name']))
 
         # In depth infos :
-        print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\n".format(
-            album, genre, release_date, track_nb, total_track_nb))
+        if found_lyrics :
+            lyrics = "not found"
+        else :
+            lyrics = "yes"
+
+        print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\nLyrics      : {}".format(
+            album, genre, release_date, track_nb, total_track_nb,lyrics))
         # there would also be a picture display if all was great...
 
     """ error message for when a file is skiped 
@@ -500,6 +550,7 @@ def main():
             if len(items) > 0:
                 Is_Sure = True
                 track = items[0]
+                track['name'] = mep.remove_feat(track['name'])  # in case of featurings
                 track['album']['artwork'] = track['album']['images'][0]['url']
                 # switch state
                 state = 32  # Getting genre (track object and title needed)
@@ -544,7 +595,7 @@ def main():
             # user filled data
             track['name'] = title
             track['artists'][0]['name'] = artist
-            search = "https://www.google.com/search?q=" + mep.slugify(track['name']) + "+" + mep.slugify(track['artists'][0]['name'])
+            search = "https://www.google.com/search?q=" + slugify(track['name']) + "+" + slugify(track['artists'][0]['name'])
             webbrowser.open(search) 
 
             if interface.ask("more than one artist ?"):
@@ -607,7 +658,6 @@ def main():
 
             #getting lyrics 
             if get_lyrics: 
-                track['lyrics'] = """ """
                 track['lyrics'] = mep.get_lyrics(track['artists'][0]['name'], track['name'])
 
             state = 4
@@ -616,15 +666,14 @@ def main():
         # STATE 4 : User verification (track object and title needed)
         elif state == 4:
 
-            track['name'] = mep.remove_feat(track['name'])  # in case of featurings
-
             interface.track_infos(Is_Sure, title=track['name'],
                                   artists= track['artists'],
                                   album= track['album']['name'],
                                   genre   = track['genre'],
                                   release_date= track['album']['release_date'],
                                   track_nb= track['track_number'],
-                                  total_track_nb= track['album']['total_tracks'])
+                                  total_track_nb= track['album']['total_tracks'],
+                                  found_lyrics = (track['lyrics']==""))
 
             # displaying image TO CHANGE
             if Open_image_auto:
@@ -658,12 +707,12 @@ def main():
                 # preparing new file name and directory path 
                 if track['track_number'] != None :
                     if track['track_number']<10 :
-                        new_file_name = "0" + str(track['track_number']) + "_" + track['name']
+                        new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_')
                     else :
-                        new_file_name = str(track['track_number']) + "_" + track['name']
+                        new_file_name = str(track['track_number']) + "-" + slugify(track['name'],separator='_')
                 else :
-                    new_file_name = track['name']
-                new_file_name = mep.slugify(new_file_name) + file_extension[file_nb]  # removing annoying characters and adding extension
+                    new_file_name = slugify(track['name'],separator='_')
+                new_file_name = new_file_name + file_extension[file_nb]  #adding extension
 
                 temp_path = path + file_name[file_nb]
                 new_path = path + new_file_name
@@ -678,7 +727,7 @@ def main():
 
 
                 # downloading image
-                image_name = mep.slugify(track['album']['name']+"_artwork")+".jpg"
+                image_name = slugify(track['album']['name']+"_artwork")+".jpg"
                 image_path = mep.get_file(track['album']['artwork'], image_name, path)
             
                 # changing name of the file
