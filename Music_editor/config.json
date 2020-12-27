@@ -5,7 +5,8 @@
     "default_genre"      : "Other",
     
     "get_label"          : true,
-    "get_bpm"            : false,
+    "get_bpm"            : true,
+    "get_lyrics"         : true,
     "store_image_in_file": true
     
 
