@@ -618,9 +618,12 @@ def main():
                 # making sure the file is writable : 
                 os.chmod(path+file_name[file_nb], stat.S_IRWXU)
 
-                # preparing new file name and directory path TODO check track number make it always 00 and use _ as spaces ?
+                # preparing new file name and directory path 
                 if track['track_number'] != None :
-                    new_file_name = track['track_number'] + "-" + track['name']
+                    if track['track_number']<10 :
+                        new_file_name = "0" + str(track['track_number']) + "_" + track['name']
+                    else :
+                        new_file_name = str(track['track_number']) + "_" + track['name']
                 else :
                     new_file_name = track['name']
                 new_file_name = mep.slugify(new_file_name) + file_extension[file_nb]  # removing annoying characters and adding extension
@@ -636,8 +639,8 @@ def main():
                     track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+ \
                                                     " & "+track['artists'][2]['name']+")"  # correct title
 
+
                 # downloading image
-                
                 image_name = mep.slugify(track['album']['name']+"_artwork")+".jpg"
                 image_path = mep.get_file(track['album']['artwork'], image_name, path)
             
@@ -709,6 +712,7 @@ def main():
                 interface.error(2)  # file was moved
                 state = 20  # skipping file          
             except Exception as e :
+                print(e)
                 interface.error(1) # file couldn't be edited
                 state = 20  # skipping file 
 
