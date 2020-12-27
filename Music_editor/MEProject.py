@@ -589,14 +589,6 @@ def main():
                                   track_nb= track['track_number'],
                                   total_track_nb= track['album']['total_tracks'])
 
-            nb_artist = len(track['artists'])
-            # the title incorporates the featured artists
-            if nb_artist == 2:
-                track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+")"  # correct title
-            elif nb_artist > 2:
-                track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+ \
-                                                 " & "+track['artists'][2]['name']+")"  # correct title
-
             # displaying image TO CHANGE
             if Open_image_auto:
                 webbrowser.open(track['album']['artwork'])
@@ -623,15 +615,26 @@ def main():
         elif state == 5:
             
             try :
-                # making sure the file is writable : TODO Check if error can occur 
+                # making sure the file is writable : 
                 os.chmod(path+file_name[file_nb], stat.S_IRWXU)
 
-                # preparing new file name and directory path
-                new_file_name = track['name'] + "_" + track['artists'][0]['name']
+                # preparing new file name and directory path TODO check track number make it always 00 and use _ as spaces ?
+                if track['track_number'] != None :
+                    new_file_name = track['track_number'] + "-" + track['name']
+                else :
+                    new_file_name = track['name']
                 new_file_name = mep.slugify(new_file_name) + file_extension[file_nb]  # removing annoying characters and adding extension
 
                 temp_path = path + file_name[file_nb]
                 new_path = path + new_file_name
+
+                # adding featured artist to title 
+                nb_artist = len(track['artists'])
+                if nb_artist == 2:
+                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+")"  # correct title
+                elif nb_artist > 2:
+                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+ \
+                                                    " & "+track['artists'][2]['name']+")"  # correct title
 
                 # downloading image
                 
