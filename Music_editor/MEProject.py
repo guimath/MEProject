@@ -370,13 +370,13 @@ def main():
         # STATE 4 : User verification (track object and title needed)
         elif state == 4:
 
-            interface.track_infos(Is_Sure, title=track['name'],
-                                  artists= track['artists'],
-                                  album= track['album']['name'],
-                                  genre   = track['genre'],
-                                  release_date= track['album']['release_date'],
-                                  track_nb= track['track_number'],
-                                  total_track_nb= track['album']['total_tracks'],
+            interface.track_infos(Is_Sure, title = track['name'],
+                                  artists = track['artists'],
+                                  album = track['album']['name'],
+                                  genre = track['genre'],
+                                  release_date = track['album']['release_date'],
+                                  track_nb = track['track_number'],
+                                  total_track_nb = track['album']['total_tracks'],
                                   lyrics_service = track['lyrics']['service'])
 
             # displaying image TO CHANGE
@@ -421,6 +421,10 @@ def main():
                 temp_path = path + file_name[file_nb]
                 new_path = path + new_file_name
 
+                # changing name of the file
+                src = os.path.realpath(temp_path)
+                os.rename(temp_path, new_path)
+
                 # adding featured artist to title 
                 nb_artist = len(track['artists'])
                 if nb_artist == 2:
@@ -430,13 +434,11 @@ def main():
                                                     " & "+track['artists'][2]['name']+")"  # correct title
 
 
-                # downloading image
+                # downloading image 
                 image_name = slugify(track['album']['name']+"_artwork")+".jpg"
                 image_path = mep.get_file(track['album']['artwork'], image_name, path)
             
-                # changing name of the file
-                src = os.path.realpath(temp_path)
-                os.rename(temp_path, new_path)
+                
 
                 # modifing the tags
                 tag = eyed3.id3.tag.Tag()
