@@ -144,13 +144,17 @@ class MEP:
         lyrics = "Error1"
         try:
             url = "http://genius.com/%s-%s-lyrics" % (artist.replace(' ', '-'), title.replace(' ', '-'))
+            print(url)
             lyrics_page = requests.get(url)
             soup = BeautifulSoup(lyrics_page.text, 'html.parser')
             lyrics_container = soup.find("div", {"class": "lyrics"})
             if lyrics_container:
+                
                 lyrics = lyrics_container.get_text()
+                # artist.lower().replace(" ", "")
                 if artist.lower().replace(" ", "") not in soup.text.lower().replace(" ", ""):
-                    lyrics = "Error2"
+                    print("?")
+                #    lyrics = "Error2"
         except Exception as error:
             print(error)
         return lyrics
@@ -159,16 +163,21 @@ class MEP:
         #slugify both
         title = slugify(title.replace("'",""))
         artist = slugify(artist.replace("'",""))
+        #artist = artist[0] + artist[1:].lower() 
         lyrics = self._musixmatch(artist, title)
+        service = "musixmatch"
         if lyrics == "Error1" :
             print("2nd try")
             lyrics = self._genius(artist, title)
+            service = "genius"
             if lyrics == "Error1" :
-                return ""
+                service = "lyrics not found"
+                return "", service
 
         elif lyrics == "Error2" :
-            return ""
-        return lyrics
+            service = "lyrics not found"
+            return "", service
+        return lyrics, service
             
 
 
@@ -213,7 +222,11 @@ class Interface:
         print("| full auto | semi auto | discovery |")
         print("-------------------------------------")
         print("")
-        mode_nb = int(input("mode : "))
+        if self._params["debug"] :
+            print("mode : 1")
+            mode_nb = 1
+        else :
+            mode_nb = int(input("mode : "))
         
         if mode_nb >= 3:
             mode_nb = 3
@@ -275,7 +288,7 @@ class Interface:
 
     """ Displaying info on the track
         Visual might change depending on information"""
-    def track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb,found_lyrics):
+    def track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb, lyrics_service):
         if Is_Sure:
             print("")
             print("We have a match !")
@@ -299,14 +312,9 @@ class Interface:
             print("{} by {} featuring {} & {}".format(
                 title, artists[0]['name'], artists[1]['name'], artists[2]['name']))
 
-        # In depth infos :
-        if found_lyrics :
-            lyrics = "not found"
-        else :
-            lyrics = "yes"
 
-        print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\nLyrics      : {}".format(
-            album, genre, release_date, track_nb, total_track_nb,lyrics))
+        print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\nLyrics       : {}".format(
+            album, genre, release_date, track_nb, total_track_nb, lyrics_service))
         # there would also be a picture display if all was great...
 
     """ error message for when a file is skiped 
@@ -355,7 +363,7 @@ def main():
     signature = "MEP by GM"
 
     # Variable initialization
-    debug = False
+    debug = True
     Is_Sure = True  # to check wether a file needs to be checked by user
     accepted_extensions = [".mp3"]  # list of all accepted extensions
     not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
@@ -552,6 +560,7 @@ def main():
                 track = items[0]
                 track['name'] = mep.remove_feat(track['name'])  # in case of featurings
                 track['album']['artwork'] = track['album']['images'][0]['url']
+                track['lyrics'] = {}
                 # switch state
                 state = 32  # Getting genre (track object and title needed)
 
@@ -591,6 +600,8 @@ def main():
             track = {}
             track['artists'] = [{}]
             track['album'] = {}
+            track['lyrics'] = {}
+            
 
             # user filled data
             track['name'] = title
@@ -658,7 +669,7 @@ def main():
 
             #getting lyrics 
             if get_lyrics: 
-                track['lyrics'] = mep.get_lyrics(track['artists'][0]['name'], track['name'])
+                (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
 
             state = 4
 
@@ -673,7 +684,7 @@ def main():
                                   release_date= track['album']['release_date'],
                                   track_nb= track['track_number'],
                                   total_track_nb= track['album']['total_tracks'],
-                                  found_lyrics = (track['lyrics']==""))
+                                  lyrics_service = track['lyrics']['service'])
 
             # displaying image TO CHANGE
             if Open_image_auto:
