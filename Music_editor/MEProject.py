@@ -6,7 +6,6 @@ import os
 import sys   # to get the name of the prog file
 import time  # for sleep function
 from pathlib import Path # to get path to directory
-from bs4 import BeautifulSoup  # to get lyrics (crawler)
 
 # for file modification
 import eyed3  # to parse mp3 files
@@ -16,23 +15,22 @@ import stat   # to change read/write file status
 
 # to 'slugify' string
 from slugify import slugify 
-import re
-import codecs
 
 # for image
-import requests   # to get image from the web + for webscrapping
+import requests   # to get image from the web
 import webbrowser  # to open url in browser
 
 # for spotify api
 import spotipy  # Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 
-
+import MEPInterface 
+import MEPUtilitaries
 
 # for debug only
 # import pprint
 
-# modifiable variables in config file TO UPDATE !!!!!!!!!!!!!!!!!!!!!!
+# modifiable variables in config file TODO UPDATE !!!!!!!!!!!!!!!!!!!!!!
 '''
 folder_name             : Name of the folder where all the music will be droped
 prefered_feat_acronyme  : Used when a track has multiple artist. The title will look like : *title_of_track* (*prefered_feat_acronyme* *other artist*)
@@ -40,330 +38,21 @@ default_genre           : If MEP doesn't find a genre this is what will be writt
 mode                    : 1 is full auto, 2 is semi auto and 3 is discovery
 '''
 
-# global variables
-treated_file_nb = 0
-remaining_file_nb = 0
-file_nb = 1
-state = 0
-All_Auto = bool
 
-class MEP:
-    def __init__(self, interface, debug):
-        self.debug     = debug
-        self.interface = interface
-
-    # Removes the "'feat." type from the title
-    # @returns corrected title
-    def remove_feat(self, title):
-        if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
-            # complicated in case there is anothere paranthesis in the title
-            b = []
-            b = title.split("(")
-            title = b[0]
-            for i in range(1, len(b)-1):
-                title = title + "(" + b[i]
-        return title.strip()
-
-    """ 
-    # removes unwanted characteres to make the name file friendly
-    # @return value the correcter string
-    def slugify(self, value):
-        value = unicodedata.normalize('NFKC', value)
-        value = re.sub(r'[^\w\s-]', '', value).strip().lower()
-        value = re.sub(r'[-\s]+', '-', value)
-
-        return value"""
-
-    # Downloading picture from specified url as specified filename to specified path
-    # @returns the complete path of the new downloaded file if worked correctly, else returns 0
-    def get_file(self, file_url, filename, path):
-        path = path + filename
-        # Open the url image, set stream to True, this will return the stream content.
-        try:
-            r = requests.get(file_url, stream=True)
-
-            # Check if the image was retrieved successfully
-            if r.status_code == 200:
-                # Set decode_content value to True, otherwise the downloaded image file's size will be zero.
-                r.raw.decode_content = True
-
-                # Open a local file with wb ( write binary ) permission.
-                with open(path, 'wb') as f:
-                    shutil.copyfileobj(r.raw, f)
-
-                return path
-            else:
-                self.interface.warning("image url can't be reached", "not adding image to file")
-                return ""
-
-        except:
-            self.interface.warning("image downloading failed", "not adding image to file")
-            return ""
-    def _musixmatch(self, artist, title):
-  
-        url = ""
-        lyrics = "Error1"
-
-        def extract_mxm_props(soup_page):
-            scripts = soup_page.find_all("script")
-            props_script = None
-            for script in scripts:
-                if script and script.contents and "__mxmProps" in script.contents[0]:
-                    props_script = script
-                    break
-            return props_script.contents[0]
-
-        try:
-            search_url = "https://www.musixmatch.com/search/%s-%s/tracks" % (
-                artist.replace(' ', '-'), title.replace(' ', '-'))
-            header = {"User-Agent": "curl/7.9.8 (i686-pc-linux-gnu) libcurl 7.9.8 (OpenSSL 0.9.6b) (ipv6 enabled)"}
-            search_results = requests.get(search_url, headers=header)
-            soup = BeautifulSoup(search_results.text, 'html.parser')
-            page = re.findall('"track_share_url":"([^"]*)', extract_mxm_props(soup))
-            if page:
-                url = codecs.decode(page[0], 'unicode-escape')
-                lyrics_page = requests.get(url, headers=header)
-                soup = BeautifulSoup(lyrics_page.text, 'html.parser')
-                props = extract_mxm_props(soup)
-                if '"body":"' in props:
-                    lyrics = props.split('"body":"')[1].split('","language"')[0]
-                    lyrics = lyrics.replace("\\n", "\n")
-                    lyrics = lyrics.replace("\\", "")
-                    if not lyrics.strip():
-                        lyrics = "Error1"
-                    album = soup.find(class_="mxm-track-footer__album")
-                    if album:
-                        album = album.find(class_="mui-cell__title").getText()
-        except Exception as error:
-            print(error)
-            lyrics = "Error2"
-        return lyrics
-
-    def _genius(self, artist, title):
-        url = ""
-        lyrics = "Error1"
-        try:
-            url = "http://genius.com/%s-%s-lyrics" % (artist.replace(' ', '-'), title.replace(' ', '-'))
-            print(url)
-            lyrics_page = requests.get(url)
-            soup = BeautifulSoup(lyrics_page.text, 'html.parser')
-            lyrics_container = soup.find("div", {"class": "lyrics"})
-            if lyrics_container:
-                
-                lyrics = lyrics_container.get_text()
-                # artist.lower().replace(" ", "")
-                if artist.lower().replace(" ", "") not in soup.text.lower().replace(" ", ""):
-                    print("?")
-                #    lyrics = "Error2"
-        except Exception as error:
-            print(error)
-        return lyrics
-
-    def get_lyrics(self, artist, title):
-        #slugify both
-        title = slugify(title.replace("'",""))
-        artist = slugify(artist.replace("'",""))
-        #artist = artist[0] + artist[1:].lower() 
-        lyrics = self._musixmatch(artist, title)
-        service = "musixmatch"
-        if lyrics == "Error1" :
-            print("2nd try")
-            lyrics = self._genius(artist, title)
-            service = "genius"
-            if lyrics == "Error1" :
-                service = "lyrics not found"
-                return "", service
-
-        elif lyrics == "Error2" :
-            service = "lyrics not found"
-            return "", service
-        return lyrics, service
-            
-
-
-class Interface:
-    """ Everything that has to do with the visual interface is done here"""
-
-    def __init__(self, accepted_extensions, debug):
-        # storing a few parameters
-        self._ignore = ["MEProject.exe"]
-        self._param_accepted_extension = accepted_extensions
-        self._params = {}
-        self._params["debug"] = debug
-        self._params["all auto"] = False
-        # will inherit from pyglet ?
-        
-    """ Asking user a yes no question 
-        @param message the string to be displayed as a question
-        @return True or False (depending on user response) """
-    def ask(self, message, reason = ""):
-        if self._params["all auto"]:
-            return False
-        if (reason != ""):
-            print(reason)
-        ans = input("-> " + message + " (y/n) : ")
-        if ans == 'y' or ans == 'Y':
-            return True
-        else:
-            return False
-
-    """ Welcoming user and getting mode
-        @return mode_nb the mode number (between 1 and 3) chosen by user """
-    def global_start(self):
-        mode_name = ['full auto', 'semi auto', 'discovery']
-        print("")
-        print("         Welcome to MEProject")
-        print("")
-        print("-------------------------------------")
-        print("|           mode selection          |")
-        print("+-----------------------------------+")
-        print("|     1     |     2     |     3     |")
-        print("+-----------+-----------+-----------+")
-        print("| full auto | semi auto | discovery |")
-        print("-------------------------------------")
-        print("")
-        if self._params["debug"] :
-            print("mode : 1")
-            mode_nb = 1
-        else :
-            mode_nb = int(input("mode : "))
-        
-        if mode_nb >= 3:
-            mode_nb = 3
-        elif mode_nb <= 1:
-            mode_nb = 1
-            self._params["all auto"] = True
-
-        print("Now entering mode {}".format(mode_name[mode_nb-1]))
-        print("\n")
-        return mode_nb
-
-    """ error message for when user dropped a file in wrong format
-        Displays the name of file in wrong format and a list of accepted formats"""
-    def wrong_format(self, wrong_file_name):
-        if (wrong_file_name not in self._ignore):
-            print("the file '{}' is not in supported format" .format(wrong_file_name))
-            print("the supported formats are : ")
-            for i in range(0, len(self._param_accepted_extension)):
-                print(self._param_accepted_extension[i])
-            self._ignore.append(wrong_file_name)
-
-    """ Beginning of the process for a new file
-        Displays  what file is being treated"""
-    def start_process(self, file_nb, total_file_nb, file_name):
-        print("-------------------------------------------------------\n")
-        print("file {} out of {} : '{}'".format(
-            file_nb, total_file_nb, file_name))
-
-    """ Showing artist and title (reduced version of track_info)"""
-    def artist_and_title(self, artist, title):
-        print("artist : {}".format(artist))
-        print("title  : {}".format(title))
-
-    """ error message : file already went through the system
-        is linked to an ask
-        """
-    def already_treated(self):
-        print("file has already been treated with MEP")
-
-    """ Getting title and artist from user
-        @return (artist, title) the info given by user 
-        """
-    def get_title_manu(self, reason= ""):
-        if reason != "" :
-            print(reason)
-
-        print("Let's do it manually then !")
-        print("")
-        artist = input("artist name : ")
-        title = input("track name  : ")
-        return (artist, title)
-
-
-
-    def manual_tagging(self, artist, title):
-        print("ok let's go !")
-        self.artist_and_title(artist, title)
-        # will need to be expanded
-
-    """ Displaying info on the track
-        Visual might change depending on information"""
-    def track_infos(self, Is_Sure, title, artists, album, genre, release_date, track_nb, total_track_nb, lyrics_service):
-        if Is_Sure:
-            print("")
-            print("We have a match !")
-            print("")
-        else:
-            print("")
-            print("exact track not found")
-            print("")
-            print("Potential track :")
-        nb_artist = len(artists)
-
-        # Basic infos :
-        if nb_artist == 1:  # no feat
-            print("{} by {} :".format(title, artists[0]['name']))
-
-        elif nb_artist == 2:
-            print("{} by {} featuring {}".format(
-                title, artists[0]['name'], artists[1]['name']))
-
-        else:
-            print("{} by {} featuring {} & {}".format(
-                title, artists[0]['name'], artists[1]['name'], artists[2]['name']))
-
-
-        print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}\nLyrics       : {}".format(
-            album, genre, release_date, track_nb, total_track_nb, lyrics_service))
-        # there would also be a picture display if all was great...
-
-    """ error message for when a file is skiped 
-        Displays error number and explication"""
-    def error(self, error_nb):
-        print(    "---------------------------------")
-        print(    "| file was skipped | error n°{}  |".format(error_nb)) 
-        print(    "---------------------------------")
-        if error_nb == 1:
-            print("|    file couldn't be edited    |")
-        elif error_nb == 2:
-            print("| file was moved during process |")
-        elif error_nb == 3:
-            print("|  file already in the folder   |")
-        elif error_nb == 4:
-            print("| file didn't have usable tags  |")
-        elif error_nb == 5:
-            print("|  No matching track was found  |")
-        print(    "---------------------------------\n")
-
-    def warning(self, problem, solution):
-        print("[WARNING] " + problem + " -> " + solution )
-    
-    """ Closing program when in full auto mode 
-        Gives litle summary of actions (nb of files processed out of total)"""
-    def end_full_auto(self, total_file_nb, treated_file_nb) :
-        """ Closing program when in full auto mode 
-            Gives litle summary of actions (nb of files processed out of total)"""
-
-        if not self._params["debug"]: 
-            if total_file_nb == 0:
-                input("No file found")
-            else:
-                input("{} files correctly processed out of {}".format(
-                    treated_file_nb, total_file_nb))
-        else:
-            print("{} files correctly processed out of {}".format(
-                treated_file_nb, total_file_nb))
 
 
 def main():
-    global treated_file_nb, remaining_file_nb, file_nb, All_Auto, state
+    add_signature = False # param (maybe changed in config... not sure yet)
+    debug = True # param (maybe changed in config... not sure yet)
 
-    # param (maybe changed in config... not sure yet)
-    add_signature = False
-    signature = "MEP by GM"
+    # global variables
+    treated_file_nb = 0
+    remaining_file_nb = 0
+    file_nb = 1
+    state = 0
+    All_Auto = bool
 
     # Variable initialization
-    debug = True
     Is_Sure = True  # to check wether a file needs to be checked by user
     accepted_extensions = [".mp3"]  # list of all accepted extensions
     not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
@@ -371,10 +60,14 @@ def main():
     file_name = ["music.mp3"]   # will store all file names
     title = ""  # temporary string to store track title
     artist = ""  # temporary string to store artist name
+    if add_signature :
+        signature = "MEP by GM"
+    else : 
+        signature = "-+-"
 
     eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
-    interface = Interface(accepted_extensions, debug)
-    mep = MEP(interface, debug)
+    interface = MEPInterface.Interface(accepted_extensions, debug)
+    mep = MEPUtilitaries.MEP(interface, debug)
 
     # Getting path (in the directory of the program)
     path = os.path.dirname(os.path.realpath(__file__))
