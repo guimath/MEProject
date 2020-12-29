@@ -1,20 +1,19 @@
 class Interface:
     """ Everything that has to do with the visual interface is done here"""
 
-    def __init__(self, accepted_extensions, debug):
+    def __init__(self, params):
         # storing a few parameters
         self._ignore = ["MEProject.exe"]
-        self._param_accepted_extension = accepted_extensions
-        self._params = {}
-        self._params["debug"] = debug
-        self._params["all auto"] = False
+        self.accepted_extensions = params["accepted_extensions"] 
+        self.debug = params["debug"] 
+        self.all_Auto = False #will be updated when user chooses mode
         # will inherit from pyglet ?
         
     """ Asking user a yes no question 
         @param message the string to be displayed as a question
         @return True or False (depending on user response) """
     def ask(self, message, reason = ""):
-        if self._params["all auto"]:
+        if self.all_Auto:
             return False
         if (reason != ""):
             print(reason)
@@ -39,7 +38,7 @@ class Interface:
         print("| full auto | semi auto | discovery |")
         print("-------------------------------------")
         print("")
-        if self._params["debug"] :
+        if self.debug :
             print("mode : 1")
             mode_nb = 1
         else :
@@ -49,7 +48,7 @@ class Interface:
             mode_nb = 3
         elif mode_nb <= 1:
             mode_nb = 1
-            self._params["all auto"] = True
+            self.all_Auto = True
 
         print("Now entering mode {}".format(mode_name[mode_nb-1]))
         print("\n")
@@ -61,8 +60,8 @@ class Interface:
         if (wrong_file_name not in self._ignore):
             print("the file '{}' is not in supported format" .format(wrong_file_name))
             print("the supported formats are : ")
-            for i in range(0, len(self._param_accepted_extension)):
-                print(self._param_accepted_extension[i])
+            for i in range(0, len(self._param_accepted_extensions)):
+                print(self._param_accepted_extensions[i])
             self._ignore.append(wrong_file_name)
 
     """ Beginning of the process for a new file
@@ -161,7 +160,7 @@ class Interface:
         """ Closing program when in full auto mode 
             Gives litle summary of actions (nb of files processed out of total)"""
 
-        if not self._params["debug"]: 
+        if not self.debug: 
             if total_file_nb == 0:
                 input("No file found")
             else:

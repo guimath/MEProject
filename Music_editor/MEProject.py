@@ -42,102 +42,107 @@ mode                    : 1 is full auto, 2 is semi auto and 3 is discovery
 
 
 def main():
-    add_signature = False # param (maybe changed in config... not sure yet)
-    debug = False # param (maybe changed in config... not sure yet)
+    params = {}
 
-    # global variables
+    params['add_signature'] = False # param (maybe changed in config... not sure yet)
+    params['debug'] = False # param (maybe changed in config... not sure yet)
+
+    
+
+    # Variable initialization
+    # local
     treated_file_nb = 0
     remaining_file_nb = 0
     file_nb = 1
     state = 0
-    All_Auto = bool
-
-    # Variable initialization
-    Is_Sure = True  # to check wether a file needs to be checked by user
-    accepted_extensions = [".mp3"]  # list of all accepted extensions
     not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
     file_extension = [".mp3"]   # will store all file extensions
     file_name = ["music.mp3"]   # will store all file names
     title = ""  # temporary string to store track title
     artist = ""  # temporary string to store artist name
-    if add_signature :
-        signature = "MEP by GM"
-    else : 
-        signature = "-+-"
-
-    eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
-    interface = MEPInterface.Interface(accepted_extensions, debug)
-    mep = MEPUtilitaries.MEP(interface, debug)
+    Is_Sure = True  # to check wether a file needs to be checked by user
 
     # Getting path (in the directory of the program)
-    path = os.path.dirname(os.path.realpath(__file__))
-    antislash = "\ "  # adding antislash (not elegant but works)
-    antislash = antislash[:1]
-    path = path+antislash
+    path_separator = os.path.sep 
+    path = os.path.dirname(os.path.realpath(__file__)) + path_separator
 
-    # getting the name of the prog
-    prog_name = os.path.abspath(sys.argv[0])
-    prog_name = prog_name[len(path):]  # removing path from the file name
+    # global
+    params['accepted_extensions'] = {}
+    params['accepted_extensions'] = [".mp3"]  # list of all accepted extensions
+    if params['add_signature'] :
+        params['signature'] = "MEP by GM"
+    else : 
+        params['signature'] = "-+-"
+
+    # to display info etc
+    interface = MEPInterface.Interface(params)
 
     # getting info from config file :
     try:
         with open(path+"config.json", mode="r") as j_object:
             config = json.load(j_object)
         
-        prefered_feat_acronyme = str (config["prefered_feat_sign"])
-        default_genre = str(config["default_genre"])
-        folder_name = str (config["folder_name"])
-        get_label = bool (config["get_label"])
-        get_bpm = bool (config["get_bpm"])
-        get_lyrics = bool (config["get_lyrics"])
-        store_image_in_file = bool (config["store_image_in_file"])
+        params['prefered_feat_acronyme'] = str (config["prefered_feat_sign"])
+        params['default_genre'] = str(config["default_genre"])
+        params['folder_name'] = str (config["folder_name"])
+        params['get_label'] = bool (config["get_label"])
+        params['get_bpm'] = bool (config["get_bpm"])
+        params['get_lyrics'] = bool (config["get_lyrics"])
+        params['store_image_in_file'] = bool (config["store_image_in_file"])
 
     except FileNotFoundError:
         interface.warning("No config file found", "using standard setup")  # TODO make ti better
-        prefered_feat_acronyme = "feat."
-        default_genre = "Other"
-        folder_name = "music"
-        get_label = True
-        get_bpm = True
-        get_lyrics = True
-        store_image_in_file = True
+        params['prefered_feat_acronyme'] = "feat."
+        params['default_genre'] = "Other"
+        params['folder_name'] = "music"
+        params['get_label'] = True
+        params['get_bpm'] = True
+        params['get_lyrics'] = True
+        params['store_image_in_file'] = True
 
     except json.JSONDecodeError as e:
         interface.warning("At line " + str(e.lineno)+ " of the config file, bad syntax (" + str(e.msg) + ")", "using standard setup") 
-        prefered_feat_acronyme = "feat."
-        default_genre = "Other"
-        folder_name = "music"
-        get_label = True
-        get_bpm = True
-        get_lyrics = True
-        store_image_in_file = True
+        params['prefered_feat_acronyme'] = "feat."
+        params['default_genre'] = "Other"
+        params['folder_name'] = "music"
+        params['get_label'] = True
+        params['get_bpm'] = True
+        params['get_lyrics'] = True
+        params['store_image_in_file'] = True
     
     except Exception as e :
         interface.warning("unknown error : " + str(e.msg) , "using standard setup")
-        prefered_feat_acronyme = "feat."
-        default_genre = "Other"
-        folder_name = "music"
-        get_label = True
-        get_bpm = True
-        get_lyrics = True
-        store_image_in_file = True
+        params['prefered_feat_acronyme'] = "feat."
+        params['default_genre'] = "Other"
+        params['folder_name'] = "music"
+        params['get_label'] = True
+        params['get_bpm'] = True
+        params['get_lyrics'] = True
+        params['store_image_in_file'] = True
 
     mode_nb = interface.global_start()
 
     if mode_nb == 1:  # full auto
-        All_Auto = True
-        Assume_mep_is_right = True
-        Open_image_auto = False
+        params['all_Auto'] = True
+        params['Assume_mep_is_right'] = True
+        params['Open_image_auto'] = False
+
     elif mode_nb == 2:  # semi auto
-        All_Auto = False
-        Assume_mep_is_right = True
-        Open_image_auto = False
+        params['all_Auto'] = False
+        params['Assume_mep_is_right'] = True
+        params['Open_image_auto'] = False
+
     else:
         mode_nb = 3  # discovery
-        All_Auto = False
-        Assume_mep_is_right = False
-        Open_image_auto = True
+        params['all_Auto'] = False
+        params['Assume_mep_is_right'] = False
+        params['Open_image_auto'] = True
 
+
+    
+    mep = MEPUtilitaries.MEP(interface, params)
+    #tagger = Tagger.Tagger(params,---)
+    eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
 
     # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
@@ -156,13 +161,13 @@ def main():
             for temp_file_name in os.listdir(path):
                 temp, temp_file_extension = os.path.splitext(temp_file_name)
 
-                if temp_file_extension in accepted_extensions:
+                if temp_file_extension in params['accepted_extensions']:
                     file_name.append(temp_file_name)
                     file_extension.append(temp_file_extension)
                     remaining_file_nb += 1
                     music_file_found = True
 
-                elif temp_file_name == folder_name:
+                elif temp_file_name == params['folder_name']:
                     folder_found = True
 
                 elif (temp_file_extension in not_supported_extension):
@@ -171,7 +176,7 @@ def main():
 
             # if there isn't a folder already, creates it
             if not folder_found:
-                os.makedirs(path+folder_name)
+                os.makedirs(path+params['folder_name'])
 
             # saving total number
             total_file_nb = remaining_file_nb
@@ -209,7 +214,7 @@ def main():
                 interface.artist_and_title(artist, title)
                 
 
-                if tag.encoded_by == signature:
+                if tag.encoded_by == params['signature']:
                     interface.already_treated()
                     if interface.ask("want to modify something ? "):
                         # getting the user to add title and artist
@@ -230,7 +235,7 @@ def main():
 
             else:
                 
-                if All_Auto:
+                if params['all_Auto']:
                     interface.error(4) # no usable tags
                     state = 20  # Skip track
                 else:
@@ -245,7 +250,7 @@ def main():
             search = "track:" + title.replace("'", "") + " artist:" + artist
             results = sp.search(q= search, type = "track", limit = 2)
             items = results['tracks']['items']
-            pprint.pprint(items) #debug
+            # pprint.pprint(items) #debug
 
             # Can a result be found
             if len(items) > 0:
@@ -261,7 +266,7 @@ def main():
                 # switch state
                 state = 32  # Getting genre (track object and title needed)
 
-            elif not All_Auto:
+            elif not params['all_Auto']:
                 # trying without the artist only if user can verify
                 search = "track:" + title.replace("'", "")
                 results = sp.search(q=search, type = "track", limit = 1)
@@ -276,7 +281,7 @@ def main():
                     state = 32  # Getting genre (track object and title needed)
 
             # music not found -> switch state
-            elif All_Auto:
+            elif params['all_Auto']:
                 interface.error(5)  # music not found
                 state = 20  # skip track
 
@@ -337,10 +342,10 @@ def main():
             if len(results['genres']) > 0:
                 track['genre'] = results['genres'][0]
             else:
-                track['genre'] = default_genre
+                track['genre'] = params['default_genre']
 
             # getting label and copyright
-            if get_label:
+            if params['get_label']:
                 results = sp.album(track['album']['id'])
                 #pprint.pprint(results)
                 if len(results) > 0:
@@ -352,7 +357,7 @@ def main():
                     track['album']['label'] = ""
 
             # getting BPM
-            if get_bpm:
+            if params['get_bpm']:
                 results = sp.audio_analysis(track['id'])
                 if len(results) > 0:
                     track['bpm'] = int(results['track']['tempo'])
@@ -360,7 +365,7 @@ def main():
                     track['bpm'] = 0  # default
 
             #getting lyrics 
-            if get_lyrics: 
+            if params['get_lyrics']: 
                 (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
 
             state = 4
@@ -371,17 +376,17 @@ def main():
 
             # info that can't be accessed is switched to default
             track['disc_number'] = 1
-            track['genre'] = default_genre
+            track['genre'] = params['default_genre']
 
-            if get_label :
+            if params['get_label'] :
                 track['album']['copyright'] = None
                 track['album']['label'] = None
-            if get_bpm : 
+            if params['get_bpm'] : 
                 track['bpm'] = None  
 
             #getting lyrics 
-            if get_lyrics: 
-                (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
+            if params['get_lyrics']: 
+                (track['lyrics']['text'], track['lyrics']['service']) = mep.params['get_lyrics'](track['artists'][0]['name'], track['name'])
 
             state = 4
 
@@ -389,7 +394,7 @@ def main():
         # STATE 4 : User verification (track object and title needed)
         elif state == 4:
 
-            interface.track_infos(Is_Sure, title = track['name'],
+            interface.track_infos(Is_Sure , title = track['name'],
                                   artists = track['artists'],
                                   album = track['album']['name'],
                                   genre = track['genre'],
@@ -399,11 +404,11 @@ def main():
                                   lyrics_service = track['lyrics']['service'])
 
             # displaying image TO CHANGE
-            if Open_image_auto:
+            if params['Open_image_auto']:
                 webbrowser.open(track['album']['artwork'])
 
             # switch state
-            if Assume_mep_is_right and Is_Sure:
+            if params['Assume_mep_is_right'] and Is_Sure:
                 state = 5  # file update (track object needed)
 
             elif not interface.ask("wrong song ?"):
@@ -447,16 +452,17 @@ def main():
                 # adding featured artist to title 
                 nb_artist = len(track['artists'])
                 if nb_artist == 2:
-                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+")"  # correct title
+                    track['name'] = track['name']+" ("+params['prefered_feat_acronyme']+track['artists'][1]['name']+")"  # correct title
                 elif nb_artist > 2:
-                    track['name'] = track['name']+" ("+prefered_feat_acronyme+track['artists'][1]['name']+ \
+                    track['name'] = track['name']+" ("+params['prefered_feat_acronyme']+track['artists'][1]['name']+ \
                                                     " & "+track['artists'][2]['name']+")"  # correct title
 
 
                 # downloading image 
                 image_name = slugify(track['album']['name']+"_artwork")+".jpg"
                 image_path = mep.get_file(track['album']['artwork'], image_name, path)
-            
+                if image_path == "" :
+                    image_name = ""
                 
 
                 # modifing the tags
@@ -489,8 +495,8 @@ def main():
                     except KeyError : # infos not found or not searched
                         pass
 
-                    if add_signature:
-                        tag.encoded_by = signature  # Program signature
+                    if params['add_signature']:
+                        tag.encoded_by = params['signature']  # Program signature
 
                     # works but no way to get info
                     # tag.composer = ""
@@ -501,7 +507,7 @@ def main():
 
                     # image
                     if (image_path != "") : 
-                        if store_image_in_file :
+                        if params['store_image_in_file'] :
                             # read image into memory
                             imagedata = open(image_path, "rb").read()
 
@@ -517,8 +523,8 @@ def main():
 
                         else:
                             # moving image in directory (or deleting if already present)
-                            if not os.path.exists(path+folder_name+antislash+image_name):
-                                shutil.move(image_path, path+folder_name)  # place in first folder
+                            if not os.path.exists(path+params['folder_name']+path_separator+image_name):
+                                shutil.move(image_path, path+params['folder_name'])  # place in first folder
                             else:
                                 os.remove(image_path)
 
@@ -541,11 +547,11 @@ def main():
             new_path = path + new_file_name
 
             try :
-                if os.path.exists(path+folder_name+antislash+new_file_name):
+                if os.path.exists(path+params['folder_name']+path_separator+new_file_name):
                     interface.warning("file already exists in folder", "keeping this file in main folder")
                 else :
                     treated_file_nb += 1  # file correctly treated
-                    shutil.move(new_path, path+folder_name) # place in first folder
+                    shutil.move(new_path, path+params['folder_name']) # place in first folder
                     
             except Exception as e:
                 interface.warning("Unexpected error:", sys.exc_info()[0], "keeping this file in main folder")

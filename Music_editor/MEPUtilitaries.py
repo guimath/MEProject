@@ -12,8 +12,8 @@ from bs4 import BeautifulSoup
 
 
 class MEP:
-    def __init__(self, interface, debug):
-        self.debug     = debug
+    def __init__(self, interface, params):
+        self.debug     = params['debug']
         self.interface = interface
 
     # Removes the "'feat." type from the title
@@ -117,7 +117,7 @@ class MEP:
                 lyrics = lyrics_container.get_text()
                 # artist.lower().replace(" ", "")
                 if artist.lower().replace(" ", "") not in soup.text.lower().replace(" ", ""):
-                    print("?")
+                    print("Please contact programmer -> unwanted bug")
                 #    lyrics = "Error2"
         except Exception as error:
             print(error)
@@ -131,7 +131,6 @@ class MEP:
         lyrics = self._musixmatch(artist, title)
         service = "musixmatch"
         if lyrics == "Error1" :
-            print("2nd try")
             lyrics = self._genius(artist, title)
             service = "genius"
             if lyrics == "Error1" :
