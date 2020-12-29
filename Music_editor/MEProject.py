@@ -28,7 +28,7 @@ import MEPInterface
 import MEPUtilitaries
 
 # for debug only
-# import pprint
+import pprint
 
 # modifiable variables in config file TODO UPDATE !!!!!!!!!!!!!!!!!!!!!!
 '''
@@ -43,7 +43,7 @@ mode                    : 1 is full auto, 2 is semi auto and 3 is discovery
 
 def main():
     add_signature = False # param (maybe changed in config... not sure yet)
-    debug = True # param (maybe changed in config... not sure yet)
+    debug = False # param (maybe changed in config... not sure yet)
 
     # global variables
     treated_file_nb = 0
@@ -243,14 +243,18 @@ def main():
         elif state == 3:
             # Search for more info on the track using spotify api
             search = "track:" + title.replace("'", "") + " artist:" + artist
-            results = sp.search(q= search, type = "track", limit = 1)
+            results = sp.search(q= search, type = "track", limit = 2)
             items = results['tracks']['items']
-            # pprint.pprint(results) #debug
+            pprint.pprint(items) #debug
 
             # Can a result be found
             if len(items) > 0:
                 Is_Sure = True
-                track = items[0]
+                if (items[0]['album']['artists'][0]['name'] == 'Various Artists') :
+                    track = items[1] # index 0 was a playlist TODO maybe add better checks
+                else : 
+                    track = items[0]
+
                 track['name'] = mep.remove_feat(track['name'])  # in case of featurings
                 track['album']['artwork'] = track['album']['images'][0]['url']
                 track['lyrics'] = {}
@@ -261,16 +265,19 @@ def main():
                 # trying without the artist only if user can verify
                 search = "track:" + title.replace("'", "")
                 results = sp.search(q=search, type = "track", limit = 1)
-
+                print("a")
                 items = results['tracks']['items']
                 if len(items) > 0:
                     Is_Sure = False
                     track = items[0]
+                    track['name'] = mep.remove_feat(track['name'])  # in case of featurings
                     track['album']['artwork'] = track['album']['images'][0]['url']
+                    track['lyrics'] = {}
                     state = 32  # Getting genre (track object and title needed)
 
             # music not found -> switch state
             elif All_Auto:
+                interface.error(5)  # music not found
                 state = 20  # skip track
 
             elif interface.ask(reason = "error 808 : music not found..." , message = "Do you want to retry with another spelling ?"):
@@ -281,7 +288,7 @@ def main():
                 state = 31  # manual tagging
 
             else:
-                # nothing could be done / wanted to be done
+                interface.warning("no action required", "file was skipped")  # music not found# nothing could be done / wanted to be done
                 state = 20  # skip track
 
         # ----------------------------------------------------------------------------------------------------------- 31 #
@@ -295,13 +302,15 @@ def main():
             track['album'] = {}
             track['lyrics'] = {}
             
-
-            # user filled data
+            # already filled data
             track['name'] = title
             track['artists'][0]['name'] = artist
+            
+            #search to help user
             search = "https://www.google.com/search?q=" + slugify(track['name']) + "+" + slugify(track['artists'][0]['name'])
             webbrowser.open(search) 
 
+            # user fills data
             if interface.ask("more than one artist ?"):
                 track['artists'].append({'name': input("second artist : ")})
                 y = input(
@@ -317,25 +326,14 @@ def main():
             # getting user to pick an artwork
             track['album']['artwork'] = input("image url    : ")
 
-            # TODO default stuff : might try to do other searches (with album for exemple) to complete those
-            track['disc_number'] = None
-            track['genre'] = default_genre
-
-            if get_label :
-                track['album']['copyright'] = None
-                track['album']['label'] = None
-            if get_bpm : 
-                track['bpm'] = None  # default
-
-            state = 4  # user verification
+            state = 33  # getting other info automatically (wo/ spotify)
 
         # ----------------------------------------------------------------------------------------------------------- 32 #
         # STATE 32 : Getting genre + other info auto
         elif state == 32:
+
+            # getting genre
             results = sp.artist(track['artists'][0]['id'])
-            """pprint.pprint(results)
-            for i in range(0,len(results['genres'])) :
-                print(results['genres'][i]) #DEBUG"""
             if len(results['genres']) > 0:
                 track['genre'] = results['genres'][0]
             else:
@@ -344,6 +342,7 @@ def main():
             # getting label and copyright
             if get_label:
                 results = sp.album(track['album']['id'])
+                #pprint.pprint(results)
                 if len(results) > 0:
                     track['album']['copyright'] = results['copyrights'][0]['text']
                     track['album']['label'] = results['label']
@@ -359,6 +358,26 @@ def main():
                     track['bpm'] = int(results['track']['tempo'])
                 else:
                     track['bpm'] = 0  # default
+
+            #getting lyrics 
+            if get_lyrics: 
+                (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
+
+            state = 4
+
+        # ----------------------------------------------------------------------------------------------------------- 4 #
+        # STATE 33 : getting other info (if file was not found on spotify)
+        elif state == 33 :
+
+            # info that can't be accessed is switched to default
+            track['disc_number'] = 1
+            track['genre'] = default_genre
+
+            if get_label :
+                track['album']['copyright'] = None
+                track['album']['label'] = None
+            if get_bpm : 
+                track['bpm'] = None  
 
             #getting lyrics 
             if get_lyrics: 
