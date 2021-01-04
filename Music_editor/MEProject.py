@@ -72,7 +72,7 @@ def main():
     if params['add_signature'] :
         params['signature'] = "MEP by GM"
     else : 
-        params['signature'] = "-+-"
+        params['signature'] = "-+-"   
 
     # to display info etc
     interface = MEPInterface.Interface(params)
@@ -434,7 +434,7 @@ def main():
 
                 # preparing new file name and directory path 
                 if track['track_number'] != None :
-                    if track['track_number']<10 :
+                    if track['track_number'] < 10 :
                         new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_')
                     else :
                         new_file_name = str(track['track_number']) + "-" + slugify(track['name'],separator='_')
