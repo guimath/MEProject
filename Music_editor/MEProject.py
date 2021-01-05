@@ -30,15 +30,18 @@ import MEPUtilitaries
 # for debug only
 import pprint
 
-# modifiable variables in config file TODO UPDATE !!!!!!!!!!!!!!!!!!!!!!
-'''
-folder_name             : Name of the folder where all the music will be droped
-prefered_feat_acronyme  : Used when a track has multiple artist. The title will look like : *title_of_track* (*prefered_feat_acronyme* *other artist*)
-default_genre           : If MEP doesn't find a genre this is what will be written in the file
-mode                    : 1 is full auto, 2 is semi auto and 3 is discovery
+# modifiable variables in config file
 '''
 
-
+    folder_name         : Name of the folder where all the music will be droped
+    prefered_feat_sign  : Used when a track has multiple artist. The title will look like : *title_of_track* (*prefered_feat_acronyme* *other artist*)
+    default_genre       : If MEP doesn't find a genre this is what will be written in the file
+    
+    get_label           : wether or not prog will search for the label (spotify)
+    get_bpm             : wether or not prog will search for the bpm (spotify)
+    get_lyrics          : wether or not prog will search for the label (genius/musixmatch)
+    store_image_in_file : wether prog will embed image in file or simply put it in the same directory
+'''
 
 
 def main():
