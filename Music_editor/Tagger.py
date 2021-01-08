@@ -14,7 +14,7 @@ class Tagger:
         self.add_signature = params['add_signature']
         self.path = path
         self.folder_path = path + params['folder_name']
-
+        self.state = [0,0,0,2,1,3]
         eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
 
     def _mp3(self, file_path, image_name, image_path, track):
@@ -77,6 +77,8 @@ class Tagger:
 
                 else:
                     ret = 1  
+            else :
+                ret = 2
 
         tag.save(encoding="utf-8")
         return ret
@@ -89,8 +91,7 @@ class Tagger:
             action = self._mp3(file_path, image_name, image_path, track)
         else:
             #Should never happen
-            ret = 0
-            if (self.image_name != ""):
+            if (image_name != ""):
                 action = 0 # removing image
             else :
                 action = 2
@@ -106,12 +107,11 @@ class Tagger:
                 shutil.move(image_path, self.folder_path)
             else:
                 os.remove(image_path)
-        
-        return 0
 
+        return self.state[action]
 
-        # remove_image - 0
-        # move_image   - 0
-        # all_is_good  - 0
-        # file_was_moved - 2
-        # file_uneditable - 1
+        # 0 remove_image - 0
+        # 1 move_image   - 0
+        # 2 no_image     - 0
+        # 3 file_was_moved - 2
+        # 4 file_uneditable - 1
