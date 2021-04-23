@@ -8,7 +8,6 @@ import time  # for sleep function
 from pathlib import Path # to get path to directory
 
 # for file modification
-import eyed3  # to parse mp3 files
 import json   # to parse config file
 import shutil  # to move file
 import stat   # to change read/write file status
@@ -16,34 +15,20 @@ import stat   # to change read/write file status
 # to 'slugify' string
 from slugify import slugify 
 
-# for image
-import requests   # to get image from the web
+# to display image(not great) and make user search manually
 import webbrowser  # to open url in browser
 
 # for spotify api
 import spotipy  # Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 
+#Local libs
 import MEPInterface 
 import MEPUtilitaries
 import Tagger
 
 # for debug only
-import pprint
-
-# modifiable variables in config file
-'''
-
-    folder_name         : Name of the folder where all the music will be droped
-    prefered_feat_sign  : Used when a track has multiple artist. The title will look like : *title_of_track* (*prefered_feat_acronyme* *other artist*)
-    default_genre       : If MEP doesn't find a genre this is what will be written in the file
-    
-    get_label           : wether or not prog will search for the label (spotify)
-    get_bpm             : wether or not prog will search for the bpm (spotify)
-    get_lyrics          : wether or not prog will search for the label (genius/musixmatch)
-    store_image_in_file : wether prog will embed image in file or simply put it in the same directory
-'''
-
+#import pprint
 
 def main():
     # Variable initialization
@@ -63,13 +48,13 @@ def main():
     path_separator = os.path.sep 
     path = os.path.dirname(os.path.realpath(__file__)) + path_separator
 
-    # global
-    params = {} #dict to be shared with other libraries
-
+    # global (to be shared with other libraries)
+    params = {} #dict 
     params['add_signature'] = False # param (maybe changed in config... not sure yet)
     params['debug'] = True # param (maybe changed in config... not sure yet)
     params['accepted_extensions'] = {}
     params['accepted_extensions'] = [".mp3"]  # list of all accepted extensions
+
     if params['add_signature'] :
         params['signature'] = "MEP by GM"
     else : 
@@ -121,6 +106,7 @@ def main():
         params['get_lyrics'] = True
         params['store_image_in_file'] = True
 
+    #selecting mode
     mode_nb = interface.global_start()
 
     if mode_nb == 1:  # full auto
@@ -139,17 +125,15 @@ def main():
         params['Assume_mep_is_right'] = False
         params['Open_image_auto'] = True
 
-
-    
+    #initialising libs
     mep = MEPUtilitaries.MEP(interface, params)
     tagger = Tagger.Tagger(params,path)
-    eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
 
     # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
                                                                client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))
 
-
+    # switch case equivalent
     while True:
         #print("STATE : "+str(state)) #DEBUG
         # ----------------------------------------------------------------------------------------------------------- #
