@@ -6,18 +6,21 @@ import shutil  # to move file
 import stat   # to change read/write file status
 import os
 
+#state 1 and 5
 
 class Tagger:
     def __init__(self, params, path):
         self.debug = params['debug']
         self.store_image_in_file =  params['store_image_in_file']
         self.add_signature = params['add_signature']
+        self.signature = params['signature']
         self.path = path
         self.folder_path = path + params['folder_name']
         self.state = [0,0,0,2,1,3]
         eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
 
-    def _mp3(self, file_path, image_name, image_path, track):
+
+    def _write_mp3(self, file_path, image_name, image_path, track):
         ret = 2 # no image
         # modifing the tags
         tag = eyed3.id3.tag.Tag()
@@ -33,7 +36,7 @@ class Tagger:
 
             try:
                 if track['lyrics'] != "":
-                    tag.lyrics.set("""{}""".format(track['lyrics']))
+                    tag.lyrics.set("""{}""".format(track['lyrics']['text']))
             except KeyError:  # infos not found or not searched
                 pass
 
@@ -83,12 +86,32 @@ class Tagger:
         tag.save(encoding="utf-8")
         return ret
 
+    def _read_mp3(self, temp_path):
+        eyed3.load(temp_path)  # creating object
+        tag = eyed3.id3.tag.Tag()
+        tag.parse(fileobj=temp_path)
+
+        return (tag.title, tag.artist, tag.encoded_by)
+
+
+    # Public methods :
+
+    def read_file(self, temp_path) :
+        _ , extension = os.path.splitext(temp_path)
+        if extension == ".mp3":
+            title, artist, encoded_by = self._read_mp3(temp_path)
+        else:
+            #Should never happen
+            return (None, None, None)
+        return title, artist, encoded_by
+
+        
     def update_file(self, file_path, image_name, track):
         action = 2
         image_path =  self.path + image_name
         _ , extension = os.path.splitext(file_path)
         if extension == ".mp3":
-            action = self._mp3(file_path, image_name, image_path, track)
+            action = self._write_mp3(file_path, image_name, image_path, track)
         else:
             #Should never happen
             if (image_name != ""):

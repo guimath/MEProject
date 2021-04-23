@@ -26,6 +26,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 import MEPInterface 
 import MEPUtilitaries
+import Tagger
 
 # for debug only
 import pprint
@@ -45,13 +46,6 @@ import pprint
 
 
 def main():
-    params = {}
-
-    params['add_signature'] = False # param (maybe changed in config... not sure yet)
-    params['debug'] = False # param (maybe changed in config... not sure yet)
-
-    
-
     # Variable initialization
     # local
     treated_file_nb = 0
@@ -70,6 +64,10 @@ def main():
     path = os.path.dirname(os.path.realpath(__file__)) + path_separator
 
     # global
+    params = {} #dict to be shared with other libraries
+
+    params['add_signature'] = False # param (maybe changed in config... not sure yet)
+    params['debug'] = True # param (maybe changed in config... not sure yet)
     params['accepted_extensions'] = {}
     params['accepted_extensions'] = [".mp3"]  # list of all accepted extensions
     if params['add_signature'] :
@@ -144,7 +142,7 @@ def main():
 
     
     mep = MEPUtilitaries.MEP(interface, params)
-    #tagger = Tagger.Tagger(params,---)
+    tagger = Tagger.Tagger(params,path)
     eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
 
     # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
@@ -201,23 +199,20 @@ def main():
             temp_path = path + file_name[file_nb]
 
             # trying to see if there are correct tags
-            eyed3.load(temp_path)  # creating object
-            tag = eyed3.id3.tag.Tag()
-            tag.parse(fileobj=temp_path)
+            title, artist, encoded_by = tagger.read_file(path + file_name[file_nb])
 
-            if type(tag.title) != type(None):
-                title = mep.remove_feat(tag.title)
 
-                if type(tag.artist) == type(None) or tag.artist == "None":
+            if type(title) != type(None):
+                title = mep.remove_feat(title)
+                if type(artist) == type(None) or artist == "None":
                     artist = "not found"
-                else:
-                    artist = tag.artist
+
 
                 # Displays if at least the title was found
                 interface.artist_and_title(artist, title)
                 
 
-                if tag.encoded_by == params['signature']:
+                if encoded_by == params['signature']:
                     interface.already_treated()
                     if interface.ask("want to modify something ? "):
                         # getting the user to add title and artist
