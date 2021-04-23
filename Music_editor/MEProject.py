@@ -482,7 +482,7 @@ def main():
                     
                     try : 
                         if track['lyrics'] != "":
-                            tag.lyrics.set("""{}""".format(track['lyrics']))
+                            tag.lyrics.set("""{}""".format(track['lyrics']['text']))
                     except KeyError : # infos not found or not searched
                         pass
                     
