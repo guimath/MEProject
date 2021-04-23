@@ -86,7 +86,7 @@ class Tagger:
     def update_file(self, file_path, image_name, track):
         action = 2
         image_path =  self.path + image_name
-        tmp, extension = os.path.splitext(file_path)
+        _ , extension = os.path.splitext(file_path)
         if extension == ".mp3":
             action = self._mp3(file_path, image_name, image_path, track)
         else:

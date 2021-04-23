@@ -162,7 +162,7 @@ def main():
             folder_found = False
             wrong_format = False
             for temp_file_name in os.listdir(path):
-                temp, temp_file_extension = os.path.splitext(temp_file_name)
+                _ , temp_file_extension = os.path.splitext(temp_file_name)
 
                 if temp_file_extension in params['accepted_extensions']:
                     file_name.append(temp_file_name)
@@ -449,7 +449,7 @@ def main():
                 new_path = path + new_file_name
 
                 # changing name of the file
-                src = os.path.realpath(temp_path)
+                os.path.realpath(temp_path)
                 os.rename(temp_path, new_path)
 
                 # adding featured artist to title 
