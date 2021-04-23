@@ -24,6 +24,7 @@ share/python-wheels/
 MANIFEST
 .vscode/
 *.spec
+.cache
 
 # Specific to music files :
 *.mp3
