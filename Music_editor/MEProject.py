@@ -462,73 +462,14 @@ def main():
                 if image_path == "" :
                     image_name = ""
                 
-
                 # modifing the tags
-                tag = eyed3.id3.tag.Tag()
-                if tag.parse(fileobj = new_path):
-                    tag.title = track['name']
-                    tag.artist = track['artists'][0]['name']
-                    tag.genre = track['genre']
-                    tag.album = track['album']['name']
-                    tag.album_artist = track['artists'][0]['name']
-                    tag.track_num = (track['track_number'], track['album']['total_tracks'])
-                    tag.disc_num = (track['disc_number'], None)
-                    tag.recording_date = eyed3.core.Date.parse(track['album']['release_date'])
-                    
-                    try : 
-                        if track['lyrics'] != "":
-                            tag.lyrics.set("""{}""".format(track['lyrics']['text']))
-                    except KeyError : # infos not found or not searched
-                        pass
-                    
-                    
-                    try : 
-                        tag.bpm = track['bpm']
-                    except KeyError : # infos not found or not searched
-                        pass
-                    
-                    try :
-                        tag.publisher = track['album']['label']
-                        tag.copyright = track['album']['copyright']
-                    except KeyError : # infos not found or not searched
-                        pass
+                ret = tagger.update_file(new_path,image_name,track)
+                state = 6
+                if ret > 0 :
+                    interface.error(ret)
+                    state = 20  # skipping file          
 
-                    if params['add_signature']:
-                        tag.encoded_by = params['signature']  # Program signature
-
-                    # works but no way to get info
-                    # tag.composer = ""
-
-                    # doesn't work
-                    #  # doenst work + no easy way to get info
-                    # tag.artist_origin = "France" # doesent work + no easy way to get info
-
-                    # image
-                    if (image_path != "") : 
-                        if params['store_image_in_file'] :
-                            # read image into memory
-                            imagedata = open(image_path, "rb").read()
-
-                            # deleting previous artwork if present
-                            for i in range(0, len(tag.images)):
-                                tag.images.remove(tag.images[i].description)
-
-                            # append image to tags
-                            tag.images.set(3, imagedata, "image/jpeg",description=image_name)
-
-                            # removing image from folder
-                            os.remove(image_path)
-
-                        else:
-                            # moving image in directory (or deleting if already present)
-                            if not os.path.exists(path+params['folder_name']+path_separator+image_name):
-                                shutil.move(image_path, path+params['folder_name'])  # place in first folder
-                            else:
-                                os.remove(image_path)
-
-                    tag.save(encoding="utf-8")
-                    state = 6  # moving file
-
+                
             except FileNotFoundError :
                 interface.error(2)  # file was moved
                 state = 20  # skipping file          

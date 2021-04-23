@@ -111,6 +111,7 @@ class Tagger:
         image_path =  self.path + image_name
         _ , extension = os.path.splitext(file_path)
         if extension == ".mp3":
+
             action = self._write_mp3(file_path, image_name, image_path, track)
         else:
             #Should never happen
