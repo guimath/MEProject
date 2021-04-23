@@ -114,7 +114,7 @@ def main():
         params['store_image_in_file'] = True
     
     except Exception as e :
-        interface.warning("unknown error : " + str(e.msg) , "using standard setup")
+        interface.warning("unknown error : " + str(e) , "using standard setup")
         params['prefered_feat_acronyme'] = "feat."
         params['default_genre'] = "Other"
         params['folder_name'] = "music"
@@ -389,7 +389,7 @@ def main():
 
             #getting lyrics 
             if params['get_lyrics']: 
-                (track['lyrics']['text'], track['lyrics']['service']) = mep.params['get_lyrics'](track['artists'][0]['name'], track['name'])
+                (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
 
             state = 4
 
@@ -438,7 +438,7 @@ def main():
                 # preparing new file name and directory path 
                 if track['track_number'] != None :
                     if track['track_number'] < 10 :
-                        new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_')
+                        new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_') 
                     else :
                         new_file_name = str(track['track_number']) + "-" + slugify(track['name'],separator='_')
                 else :
@@ -557,7 +557,7 @@ def main():
                     shutil.move(new_path, path+params['folder_name']) # place in first folder
                     
             except Exception as e:
-                interface.warning("Unexpected error:", sys.exc_info()[0], "keeping this file in main folder")
+                interface.warning("Unexpected error:" + sys.exc_info()[0], "keeping this file in main folder")
                 
 
             # changing state

@@ -60,8 +60,8 @@ class Interface:
         if (wrong_file_name not in self._ignore):
             print("the file '{}' is not in supported format" .format(wrong_file_name))
             print("the supported formats are : ")
-            for i in range(0, len(self._param_accepted_extensions)):
-                print(self._param_accepted_extensions[i])
+            for i in range(0, len(self.accepted_extensions)):
+                print(self.accepted_extensions[i])
             self._ignore.append(wrong_file_name)
 
     """ Beginning of the process for a new file

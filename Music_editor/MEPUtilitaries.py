@@ -28,16 +28,6 @@ class MEP:
                 title = title + "(" + b[i]
         return title.strip()
 
-    """ 
-    # removes unwanted characteres to make the name file friendly
-    # @return value the correcter string
-    def slugify(self, value):
-        value = unicodedata.normalize('NFKC', value)
-        value = re.sub(r'[^\w\s-]', '', value).strip().lower()
-        value = re.sub(r'[-\s]+', '-', value)
-
-        return value"""
-
     # Downloading picture from specified url as specified filename to specified path
     # @returns the complete path of the new downloaded file if worked correctly, else returns 0
     def get_file(self, file_url, filename, path):
@@ -63,6 +53,8 @@ class MEP:
         except:
             self.interface.warning("image downloading failed", "not adding image to file")
             return ""
+
+    # Lyrics 
     def _musixmatch(self, artist, title):
   
         url = ""
