@@ -6,18 +6,20 @@ from slugify import slugify
 import re
 import codecs
 
-# to get lyrics (crawler)
+# to dl image 
 import requests 
+
+# to get lyrics (crawler)
 from bs4 import BeautifulSoup  
 
-
+# utilitaries
 class MEP:
     def __init__(self, interface, params):
         self.debug     = params['debug']
         self.interface = interface
 
-    # Removes the "'feat." type from the title
-    # @returns corrected title
+    """ Removes the "'feat." type from the title
+        @returns corrected title """
     def remove_feat(self, title):
         if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
             # complicated in case there is anothere paranthesis in the title
@@ -28,8 +30,8 @@ class MEP:
                 title = title + "(" + b[i]
         return title.strip()
 
-    # Downloading picture from specified url as specified filename to specified path
-    # @returns the complete path of the new downloaded file if worked correctly, else returns 0
+    """ Downloading picture from specified url as specified filename to specified path
+        @returns the complete path of the new downloaded file if worked correctly, else returns 0"""
     def get_file(self, file_url, filename, path):
         path = path + filename
         # Open the url image, set stream to True, this will return the stream content.
@@ -54,7 +56,32 @@ class MEP:
             self.interface.warning("image downloading failed", "not adding image to file")
             return ""
 
-    # Lyrics 
+    """ gets lyrics from web 
+        @return tuple containing two strings : lyrics and the service used (i.e. genius etc) """
+    def get_lyrics(self, artist, title):
+        #slugify both
+        title = slugify(title.replace("'",""))
+        artist = slugify(artist.replace("'",""))
+        #artist = artist[0] + artist[1:].lower() 
+        lyrics = self._musixmatch(artist, title)
+        service = "musixmatch"
+        if lyrics == "Error1" :
+            lyrics = self._genius(artist, title)
+            service = "genius"
+            if lyrics == "Error1" :
+                service = "lyrics not found"
+                return "", service
+
+        elif lyrics == "Error2" :
+            service = "lyrics not found"
+            return "", service
+        return lyrics, service
+
+    """ -----------------------------------------------
+        --------------- Private methods ---------------
+        ----------------------------------------------- 
+    """
+        
     def _musixmatch(self, artist, title):
   
         url = ""
@@ -115,21 +142,3 @@ class MEP:
             print(error)
         return lyrics
 
-    def get_lyrics(self, artist, title):
-        #slugify both
-        title = slugify(title.replace("'",""))
-        artist = slugify(artist.replace("'",""))
-        #artist = artist[0] + artist[1:].lower() 
-        lyrics = self._musixmatch(artist, title)
-        service = "musixmatch"
-        if lyrics == "Error1" :
-            lyrics = self._genius(artist, title)
-            service = "genius"
-            if lyrics == "Error1" :
-                service = "lyrics not found"
-                return "", service
-
-        elif lyrics == "Error2" :
-            service = "lyrics not found"
-            return "", service
-        return lyrics, service

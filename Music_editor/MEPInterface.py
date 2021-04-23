@@ -49,7 +49,7 @@ class Interface:
         elif mode_nb <= 1:
             mode_nb = 1
             self.all_Auto = True
-
+            
         print("Now entering mode {}".format(mode_name[mode_nb-1]))
         print("\n")
         return mode_nb

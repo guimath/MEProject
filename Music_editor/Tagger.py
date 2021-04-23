@@ -19,6 +19,57 @@ class Tagger:
         self.state = [0,0,0,2,1,3]
         eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
 
+    """gets specific info stored in a given music file
+       @return title, artist and encoded_by tags if file could be read, None else """
+    def read_file(self, temp_path) :
+        _ , extension = os.path.splitext(temp_path)
+        if extension == ".mp3":
+            title, artist, encoded_by = self._read_mp3(temp_path)
+        else:
+            #Extension not supported | Should never happen
+            return (None, None, None)
+        return title, artist, encoded_by
+
+    """uptades music file tags according to track object
+        @return 0 if all went well, 1 if file was moved, 2 if file was uneditable
+    """
+    def update_file(self, file_path, image_name, track):
+        # 0 remove_image - 0
+        # 1 move_image   - 0
+        # 2 no_image     - 0
+        # 3 file_was_moved - 2
+        # 4 file_uneditable - 1
+        action = 2
+        image_path =  self.path + image_name
+        _ , extension = os.path.splitext(file_path)
+        if extension == ".mp3":
+
+            action = self._write_mp3(file_path, image_name, image_path, track)
+        else:
+            #Should never happen
+            if (image_name != ""):
+                action = 0 # removing image
+            else :
+                action = 2
+        
+        if action == 0 :
+            # removing image from folder
+            os.remove(image_path)
+        
+        elif action == 1 :
+            # moving image in directory (or deleting if already present)
+            if not os.path.exists(self.folder_path + os.path.sep + image_name):
+                # place in folder
+                shutil.move(image_path, self.folder_path)
+            else:
+                os.remove(image_path)
+
+        return self.state[action]
+
+    """ -----------------------------------------------
+        --------------- Private methods ---------------
+        ----------------------------------------------- 
+    """
 
     def _write_mp3(self, file_path, image_name, image_path, track):
         ret = 2 # no image
@@ -93,49 +144,3 @@ class Tagger:
 
         return (tag.title, tag.artist, tag.encoded_by)
 
-
-    # Public methods :
-
-    def read_file(self, temp_path) :
-        _ , extension = os.path.splitext(temp_path)
-        if extension == ".mp3":
-            title, artist, encoded_by = self._read_mp3(temp_path)
-        else:
-            #Should never happen
-            return (None, None, None)
-        return title, artist, encoded_by
-
-        
-    def update_file(self, file_path, image_name, track):
-        action = 2
-        image_path =  self.path + image_name
-        _ , extension = os.path.splitext(file_path)
-        if extension == ".mp3":
-
-            action = self._write_mp3(file_path, image_name, image_path, track)
-        else:
-            #Should never happen
-            if (image_name != ""):
-                action = 0 # removing image
-            else :
-                action = 2
-        
-        if action == 0 :
-            # removing image from folder
-            os.remove(image_path)
-        
-        elif action == 1 :
-            # moving image in directory (or deleting if already present)
-            if not os.path.exists(self.folder_path + os.path.sep + image_name):
-                # place in folder
-                shutil.move(image_path, self.folder_path)
-            else:
-                os.remove(image_path)
-
-        return self.state[action]
-
-        # 0 remove_image - 0
-        # 1 move_image   - 0
-        # 2 no_image     - 0
-        # 3 file_was_moved - 2
-        # 4 file_uneditable - 1
