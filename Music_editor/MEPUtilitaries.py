@@ -127,7 +127,6 @@ class MEP:
         lyrics = "Error1"
         try:
             url = "http://genius.com/%s-%s-lyrics" % (artist.replace(' ', '-'), title.replace(' ', '-'))
-            print(url)
             lyrics_page = requests.get(url)
             soup = BeautifulSoup(lyrics_page.text, 'html.parser')
             lyrics_container = soup.find("div", {"class": "lyrics"})

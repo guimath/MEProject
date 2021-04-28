@@ -1,7 +1,5 @@
 # -*-coding:utf-8 -*
-
 import os
-
 
 import sys   # to get the name of the prog file
 import time  # for sleep function
@@ -51,7 +49,7 @@ def main():
     # global (to be shared with other libraries)
     params = {} #dict 
     params['add_signature'] = False # param (maybe changed in config... not sure yet)
-    params['debug'] = True # param (maybe changed in config... not sure yet)
+    params['debug'] = False # param (maybe changed in config... not sure yet)
     params['accepted_extensions'] = {}
     params['accepted_extensions'] = [".mp3"]  # list of all accepted extensions
 
@@ -252,7 +250,6 @@ def main():
                 # trying without the artist only if user can verify
                 search = "track:" + title.replace("'", "")
                 results = sp.search(q=search, type = "track", limit = 1)
-                print("a")
                 items = results['tracks']['items']
                 if len(items) > 0:
                     Is_Sure = False
