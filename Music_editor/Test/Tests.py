@@ -1,8 +1,68 @@
+from __future__ import unicode_literals
 from bs4 import BeautifulSoup
 import requests
 import unicodedata
 
 from slugify import slugify
+
+import youtube_dl
+import pprint
+import json
+import os
+
+global filename
+
+class MyLogger(object):
+    def debug(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        print(msg)
+
+def my_hook(d):
+    global filename
+    if d['status'] == 'finished':
+        print('Done downloading, now converting ...')
+        filename=d['filename'].replace(".webm",".mp3")
+
+
+
+
+
+def dl(url):
+    ydl_opts = {
+    'format': 'bestaudio/best',
+    'writeinfojson':True,
+    'postprocessors': [{
+        'key': 'FFmpegExtractAudio',
+        'preferredcodec': 'mp3',
+        'preferredquality': '192',
+    }],
+    'logger': MyLogger(),
+    'progress_hooks': [my_hook],
+    }
+        
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+    path_info ="/home/guilhem/Documents/MEProject/"+filename.replace(".mp3",".info.json")
+    with open(path_info, mode="r") as j_object:
+                info = json.load(j_object)
+    pprint.pprint(info)
+    os.remove(path_info)
+
+    return filename,info['track'],info['uploader'].replace(" - Topic", "")
+
+
+
+
+print(dl("https://www.youtube.com/watch?v=1uYWYWPc9HU"))
+
+
+
 
 '''
 class GeniusCrawler(Crawler):
@@ -34,42 +94,9 @@ class GeniusCrawler(Crawler):
             lambda line: line is not None,
             list(lines)
         )
-        return list(lines) '''
+        return list(lines) 
 
 def split_to_word(string):
-    return string.replace("\n", " ").replace("\r", " ").split(" ")
+    return string.replace("\n", " ").replace("\r", " ").split(" ")'''
 
-def _genius(artist, title):
-    url = ""
-    lyrics = "Error1"
-    try:
-        url = "http://genius.com/%s-%s-lyrics" % (artist.replace(' ', '-'), title.replace(' ', '-'))
-        lyrics_page = requests.get(url)
-        soup = BeautifulSoup(lyrics_page.text, 'html.parser')
-        lyrics_container = soup.find("div", {"class": "lyrics"})
-        if lyrics_container:
-            lyrics = lyrics_container.get_text()
-            if artist.lower().replace(" ", "") not in soup.text.lower().replace(" ", ""):
-                lyrics = "Error2"
-    except Exception as error:
-        print("unkown error with lyrics")
-    return lyrics
 
-def get_lyrics(artist, title):
-    #slugify both
-    lyrics = _genius(artist, title)
-    if lyrics == "Error1" :
-        print("warning no lyrics found")
-    elif lyrics == "Error2" :
-        print("unkown error with lyrics")
-    else :
-        return lyrics
-    
-def main() :
-    val = "Spider ZED"
-    val = str(val[0]) + val[1:].lower() 
-    #val = re.sub(r'[-\s]+', '-', val)
-    print(val)
-
-if __name__ == '__main__':
-    main()
