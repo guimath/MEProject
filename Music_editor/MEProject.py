@@ -38,6 +38,7 @@ def main():
     not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
     file_extension = [".mp3"]   # will store all file extensions
     file_name = ["music.mp3"]   # will store all file names
+    ignore = ["music.mp3"]
     title = ""  # temporary string to store track title
     artist = ""  # temporary string to store artist name
     Is_Sure = True  # to check wether a file needs to be checked by user
@@ -144,7 +145,7 @@ def main():
             for temp_file_name in os.listdir(path):
                 _ , temp_file_extension = os.path.splitext(temp_file_name)
 
-                if temp_file_extension in params['accepted_extensions']:
+                if temp_file_extension in params['accepted_extensions'] and temp_file_name not in ignore:
                     file_name.append(temp_file_name)
                     file_extension.append(temp_file_extension)
                     remaining_file_nb += 1
@@ -486,8 +487,9 @@ def main():
                 state = 10  # Ending program (or restarting)
 
         # ----------------------------------------------------------------------------------------------------------- 20 #
-        # STATE 20 : Skipping track (only atteingned from full auto mode)
+        # STATE 20 : Skipping track
         elif state == 20:
+            ignore.append(file_name[file_nb])
             if remaining_file_nb > 1:
                 file_nb += 1  # file being treated = next in the list
                 remaining_file_nb -= 1  # one file done
