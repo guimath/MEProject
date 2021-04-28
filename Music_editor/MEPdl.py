@@ -21,8 +21,9 @@ def _my_hook(d):
     global filename
     if d['status'] == 'finished':
         print('Done downloading, now converting ...')
-        filename=d['filename'].replace(".webm",".mp3")
-
+        filename, _=d['filename'].split(".")
+        filename += ".mp3"
+        
 def dl(url,path):
     global filename
     ydl_opts = {
