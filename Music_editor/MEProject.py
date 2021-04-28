@@ -24,6 +24,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import MEPInterface 
 import MEPUtilitaries
 import Tagger
+import MEPdl
 
 # for debug only
 #import pprint
@@ -118,7 +119,12 @@ def main():
         params['Assume_mep_is_right'] = True
         params['Open_image_auto'] = False
 
-    else:
+    elif mode_nb == 4: # start by downloading from yt
+        params['all_Auto'] = False
+        params['Assume_mep_is_right'] = True
+        params['Open_image_auto'] = False
+
+    else :
         mode_nb = 3  # discovery
         params['all_Auto'] = False
         params['Assume_mep_is_right'] = False
@@ -131,7 +137,9 @@ def main():
     # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
                                                                client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))
-
+    if mode_nb == 4 : 
+        state = 2
+        
     # switch case equivalent
     while True:
         #print("STATE : "+str(state)) #DEBUG
@@ -222,7 +230,16 @@ def main():
                 else:
                     (artist, title) = interface.get_title_manu("no title found")
                     state = 3  # search info on track
-            
+        
+        # ----------------------------------------------------------------------------------------------------------- 3 #
+        # STATE 2 : dl url
+        elif state == 2 :
+            tmp, title, artist = MEPdl.dl(interface.get_URL(),path)
+            file_name.append(tmp)
+            file_extension.append(".mp3")
+            remaining_file_nb += 1
+            total_file_nb = remaining_file_nb
+            state = 3
 
         # ----------------------------------------------------------------------------------------------------------- 3 #
         # STATE 3 : Search info on track
