@@ -26,7 +26,7 @@ class Interface:
     """ Welcoming user and getting mode
         @return mode_nb the mode number (between 1 and 3) chosen by user """
     def global_start(self):
-        mode_name = ['full auto', 'semi auto', 'discovery']
+        mode_name = ['full auto', 'semi auto', 'discovery','download']
         print("")
         print("         Welcome to MEProject")
         print("")
@@ -44,7 +44,7 @@ class Interface:
         else :
             mode_nb = int(input("mode : "))
         
-        if mode_nb >= 3:
+        if mode_nb > 4:
             mode_nb = 3
         elif mode_nb <= 1:
             mode_nb = 1
@@ -53,6 +53,10 @@ class Interface:
         print("Now entering mode {}".format(mode_name[mode_nb-1]))
         print("\n")
         return mode_nb
+
+    def get_URL(self) :
+        return input("URL to download : ")
+
 
     """ error message for when user dropped a file in wrong format
         Displays the name of file in wrong format and a list of accepted formats"""
