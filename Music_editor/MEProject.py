@@ -239,6 +239,10 @@ def main():
             file_extension.append(".mp3")
             remaining_file_nb += 1
             total_file_nb = remaining_file_nb
+            interface.start_process(file_nb, total_file_nb, file_name[file_nb])
+            tagger.read_file(path + file_name[file_nb])
+            interface.artist_and_title(artist, title)
+
             state = 3
 
         # ----------------------------------------------------------------------------------------------------------- 3 #
