@@ -129,8 +129,9 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- #
         # STATE 0 : Scanning folder
         if state == 0:
+            state = 1 # Default = get title and artist automatically
+
             # scanning folder
-            music_file_found = False
             wrong_format = False
             for temp_file_name in os.listdir(path):
                 _ , temp_file_extension = os.path.splitext(temp_file_name)
@@ -139,7 +140,6 @@ def main():
                     file_name.append(temp_file_name)
                     file_extension.append(temp_file_extension)
                     remaining_file_nb += 1
-                    music_file_found = True
 
                 elif (temp_file_extension in not_supported_extension):
                     wrong_format = True
@@ -148,70 +148,58 @@ def main():
             # saving total number
             total_file_nb = remaining_file_nb
 
-            if music_file_found :
-                state = 1  # get title and artist automatically
-
-            elif wrong_format:
+            if wrong_format:
                 interface.wrong_format(wrong_file_name)
                 time.sleep(4)
                 state = 10
 
-            else:  # no music file was found
+            elif total_file_nb <= 0:  # no music file was found
                 state = 10
 
         # ----------------------------------------------------------------------------------------------------------- 1 #
         # STATE 1 : get title and artist automatically
         elif state == 1:
+            state = 3  # Default = search info on track 
             interface.start_process(file_nb, total_file_nb, file_name[file_nb])
             temp_path = path + file_name[file_nb]
 
             # trying to see if there are correct tags
             title, artist, encoded_by = tagger.read_file(path + file_name[file_nb])
 
-
             if type(title) != type(None):
                 title = mep.remove_feat(title)
                 if type(artist) == type(None) or artist == "None":
                     artist = "not found"
 
-
                 # Displays if at least the title was found
                 interface.artist_and_title(artist, title)
                 
-
+                # checks wether program already processed file (TODO delete ?)
                 if encoded_by == params['signature']:
                     interface.already_treated()
                     if interface.ask("want to modify something ? "):
                         # getting the user to add title and artist
                         (artist, title) = interface.get_title_manu()
-                        state = 3  # search info on track (title and artist needed)
 
                     else:
                         new_file_name = file_name[file_nb]
                         state = 6  # just moving the file in correct directory
-
+                    
                 elif interface.ask("Wrong ?"):
                     # getting the user to add title and artist
                     (artist, title) = interface.get_title_manu()
-                    state = 3  # search info on track (title and artist needed)
-
-                else:
-                    state = 3  # search info on track (title and artist needed)
 
             else:
-                
                 if params['all_Auto']:
                     interface.error(4) # no usable tags
                     state = 20  # Skip track
                 else:
                     (artist, title) = interface.get_title_manu("no title found")
-                    state = 3  # search info on track
         
         # ----------------------------------------------------------------------------------------------------------- 3 #
         # STATE 2 : dl url
         elif state == 2 :
-            
-            
+            state = 3 # Default = Search info on track
 
             tmp, title, artist = MEPdl.dl(interface.get_URL(),path)
             file_name.append(tmp)
@@ -222,11 +210,12 @@ def main():
             tagger.read_file(path + file_name[file_nb])
             interface.artist_and_title(artist, title)
 
-            state = 3
 
         # ----------------------------------------------------------------------------------------------------------- 3 #
         # STATE 3 : Search info on track
         elif state == 3:
+            state = 32  # Default = getting genre (track object and title needed)
+
             # Search for more info on the track using spotify api
             search = "track:" + title.replace("'", "") + " artist:" + artist
             results = sp.search(q= search, type = "track", limit = 2)
@@ -244,8 +233,6 @@ def main():
                 track['name'] = mep.remove_feat(track['name'])  # in case of featurings
                 track['album']['artwork'] = track['album']['images'][0]['url']
                 track['lyrics'] = {}
-                # switch state
-                state = 32  # Getting genre (track object and title needed)
 
             elif not params['all_Auto']:
                 # trying without the artist only if user can verify
@@ -258,7 +245,6 @@ def main():
                     track['name'] = mep.remove_feat(track['name'])  # in case of featurings
                     track['album']['artwork'] = track['album']['images'][0]['url']
                     track['lyrics'] = {}
-                    state = 32  # Getting genre (track object and title needed)
 
             # music not found -> switch state
             elif params['all_Auto']:
@@ -279,6 +265,8 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 31 #
         # STATE 31 : manual tagging
         elif state == 31:
+            state = 33  # Default = getting other info automatically (wo/ spotify)
+
             interface.manual_tagging(artist, title)
 
             # init variables (if no track object was created before hand)
@@ -311,11 +299,10 @@ def main():
             # getting user to pick an artwork
             track['album']['artwork'] = input("image url    : ")
 
-            state = 33  # getting other info automatically (wo/ spotify)
-
         # ----------------------------------------------------------------------------------------------------------- 32 #
         # STATE 32 : Getting genre + other info auto
         elif state == 32:
+            state = 4 # Default = User verif
 
             # getting genre
             results = sp.artist(track['artists'][0]['id'])
@@ -327,7 +314,6 @@ def main():
             # getting label and copyright
             if params['get_label']:
                 results = sp.album(track['album']['id'])
-                #pprint.pprint(results)
                 if len(results) > 0:
                     track['album']['copyright'] = results['copyrights'][0]['text']
                     track['album']['label'] = results['label']
@@ -348,11 +334,12 @@ def main():
             if params['get_lyrics']: 
                 (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
 
-            state = 4
+            
 
         # ----------------------------------------------------------------------------------------------------------- 4 #
         # STATE 33 : getting other info (if file was not found on spotify)
         elif state == 33 :
+            state = 4 # Default = User verif
 
             # info that can't be accessed is switched to default
             track['disc_number'] = 1
@@ -368,11 +355,11 @@ def main():
             if params['get_lyrics']: 
                 (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
 
-            state = 4
 
         # ----------------------------------------------------------------------------------------------------------- 4 #
         # STATE 4 : User verification (track object and title needed)
         elif state == 4:
+            state = 5  # Default = file update (track object needed)
 
             interface.track_infos(Is_Sure , title = track['name'],
                                   artists = track['artists'],
@@ -383,16 +370,16 @@ def main():
                                   total_track_nb = track['album']['total_tracks'],
                                   lyrics_service = track['lyrics']['service'])
 
-            # displaying image TO CHANGE
+            # displaying image (TODO improve)
             if params['Open_image_auto']:
                 webbrowser.open(track['album']['artwork'])
 
             # switch state
             if params['Assume_mep_is_right'] and Is_Sure:
-                state = 5  # file update (track object needed)
+                pass # state  = 5
 
             elif not interface.ask("wrong song ?"):
-                state = 5  # file update (track object needed)
+                pass # state  = 5
 
             elif interface.ask("Do you want to retry with another spelling ?"):
                 (artist, title) = interface.get_title_manu("")
@@ -407,7 +394,8 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 5 #
         # STATE 5 : File update (track object needed)
         elif state == 5:
-            
+            state = 6 # Default = Moving file
+
             try :
                 # making sure the file is writable : 
                 os.chmod(path+file_name[file_nb], stat.S_IRWXU)
@@ -446,7 +434,6 @@ def main():
                 
                 # modifing the tags
                 ret = tagger.update_file(new_path,image_name,track)
-                state = 6
                 if ret > 0 :
                     interface.error(ret)
                     state = 20  # skipping file          
@@ -463,7 +450,7 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 6 #
         # STATE 6 : Moving file
         elif state == 6:
-            # moving file
+            # No default state (either restart or ending)
 
             new_path = path + new_file_name
 
@@ -502,8 +489,8 @@ def main():
         elif state == 10:
 
             if mode_nb == 2:
-                # reset variables
                 time.sleep(1)
+                # reseting variables
                 file_extension = [".mp3"]
                 file_name = ["music.mp3"]
                 file_nb = 1
@@ -513,7 +500,6 @@ def main():
 
             else:
                 interface.end_full_auto(total_file_nb, treated_file_nb)
-
                 sys.exit("")
 
 
