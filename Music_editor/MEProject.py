@@ -64,47 +64,27 @@ def main():
     interface = MEPInterface.Interface(params)
 
     # getting info from config file :
+    config = {}
     try:
         with open(path+"config.json", mode="r") as j_object:
             config = json.load(j_object)
-        
-        params['prefered_feat_acronyme'] = str (config["prefered_feat_sign"])
-        params['default_genre'] = str(config["default_genre"])
-        params['folder_name'] = str (config["folder_name"])
-        params['get_label'] = bool (config["get_label"])
-        params['get_bpm'] = bool (config["get_bpm"])
-        params['get_lyrics'] = bool (config["get_lyrics"])
-        params['store_image_in_file'] = bool (config["store_image_in_file"])
 
     except FileNotFoundError:
-        interface.warning("No config file found", "using standard setup")  # TODO make ti better
-        params['prefered_feat_acronyme'] = "feat."
-        params['default_genre'] = "Other"
-        params['folder_name'] = "music"
-        params['get_label'] = True
-        params['get_bpm'] = True
-        params['get_lyrics'] = True
-        params['store_image_in_file'] = True
+        interface.warning("No config file found", "using standard setup")
 
     except json.JSONDecodeError as e:
         interface.warning("At line " + str(e.lineno)+ " of the config file, bad syntax (" + str(e.msg) + ")", "using standard setup") 
-        params['prefered_feat_acronyme'] = "feat."
-        params['default_genre'] = "Other"
-        params['folder_name'] = "music"
-        params['get_label'] = True
-        params['get_bpm'] = True
-        params['get_lyrics'] = True
-        params['store_image_in_file'] = True
     
     except Exception as e :
         interface.warning("unknown error : " + str(e) , "using standard setup")
-        params['prefered_feat_acronyme'] = "feat."
-        params['default_genre'] = "Other"
-        params['folder_name'] = "music"
-        params['get_label'] = True
-        params['get_bpm'] = True
-        params['get_lyrics'] = True
-        params['store_image_in_file'] = True
+
+    params['prefered_feat_acronyme'] = str (config.get("prefered_feat_sign", "feat."))
+    params['default_genre'] = str(config.get("default_genre","Other"))
+    params['folder_name'] = str (config.get("folder_name","music"))
+    params['get_label'] = bool (config.get("get_label",True))
+    params['get_bpm'] = bool (config.get("get_bpm",True))
+    params['get_lyrics'] = bool (config.get("get_lyrics",True))
+    params['store_image_in_file'] = bool (config.get("store_image_in_file",True))
 
     #selecting mode
     mode_nb = interface.global_start()
@@ -123,6 +103,7 @@ def main():
         params['all_Auto'] = False
         params['Assume_mep_is_right'] = True
         params['Open_image_auto'] = False
+        state = 2 #special start (skipping scan and )
 
     else :
         mode_nb = 3  # discovery
@@ -136,10 +117,12 @@ def main():
 
     # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
-                                                               client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))
-    if mode_nb == 4 : 
-        state = 2
-        
+                                                               client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))        
+    
+    #adding folder if not existing
+    if params['folder_name'] not in os.listdir(path):
+        os.makedirs(path+params['folder_name'])
+
     # switch case equivalent
     while True:
         #print("STATE : "+str(state)) #DEBUG
@@ -148,7 +131,6 @@ def main():
         if state == 0:
             # scanning folder
             music_file_found = False
-            folder_found = False
             wrong_format = False
             for temp_file_name in os.listdir(path):
                 _ , temp_file_extension = os.path.splitext(temp_file_name)
@@ -159,28 +141,22 @@ def main():
                     remaining_file_nb += 1
                     music_file_found = True
 
-                elif temp_file_name == params['folder_name']:
-                    folder_found = True
-
                 elif (temp_file_extension in not_supported_extension):
                     wrong_format = True
                     wrong_file_name = temp_file_name
-
-            # if there isn't a folder already, creates it
-            if not folder_found:
-                os.makedirs(path+params['folder_name'])
 
             # saving total number
             total_file_nb = remaining_file_nb
 
             if music_file_found :
                 state = 1  # get title and artist automatically
+
             elif wrong_format:
                 interface.wrong_format(wrong_file_name)
                 time.sleep(4)
                 state = 10
 
-            else:  # no file other than program and directory was found
+            else:  # no music file was found
                 state = 10
 
         # ----------------------------------------------------------------------------------------------------------- 1 #
@@ -234,6 +210,9 @@ def main():
         # ----------------------------------------------------------------------------------------------------------- 3 #
         # STATE 2 : dl url
         elif state == 2 :
+            
+            
+
             tmp, title, artist = MEPdl.dl(interface.get_URL(),path)
             file_name.append(tmp)
             file_extension.append(".mp3")
