@@ -22,9 +22,11 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 #Local libs
 import MEPInterface 
-import MEPUtilitaries
 import Tagger
-import MEPdl
+from Downloads import dl_image
+from Downloads import dl_music
+from Utilitaries import *
+
 
 # for debug only
 #import pprint
@@ -49,7 +51,7 @@ def main():
     path = os.path.dirname(os.path.realpath(__file__)) + path_separator
 
     # global (to be shared with other libraries)
-    params = {} #dict 
+    params = {} 
     params['add_signature'] = False # param (maybe changed in config... not sure yet)
     params['debug'] = False # param (maybe changed in config... not sure yet)
     params['accepted_extensions'] = {}
@@ -112,7 +114,6 @@ def main():
         params['Open_image_auto'] = True
 
     #initialising libs
-    mep = MEPUtilitaries.MEP(interface, params)
     tagger = Tagger.Tagger(params,path)
 
     # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
@@ -167,7 +168,7 @@ def main():
             title, artist, encoded_by = tagger.read_tags(path + file_name[file_nb])
 
             if type(title) != type(None):
-                title = mep.remove_feat(title)
+                title = remove_feat(title)
                 if type(artist) == type(None) or artist == "None":
                     artist = "not found"
 
@@ -201,7 +202,7 @@ def main():
         elif state == 2 :
             state = 3 # Default = Search info on track
 
-            tmp, title, artist = MEPdl.dl(interface.get_URL(),path)
+            tmp, title, artist = dl_music(interface.get_URL(),path)
             file_name.append(tmp)
             file_extension.append(".mp3")
             remaining_file_nb += 1
@@ -220,7 +221,6 @@ def main():
             search = "track:" + title.replace("'", "") + " artist:" + artist
             results = sp.search(q= search, type = "track", limit = 2)
             items = results['tracks']['items']
-            # pprint.pprint(items) #debug
 
             # Can a result be found
             if len(items) > 0:
@@ -230,7 +230,7 @@ def main():
                 else : 
                     track = items[0]
 
-                track['name'] = mep.remove_feat(track['name'])  # in case of featurings
+                track['name'] = remove_feat(track['name'])  # in case of featurings
                 track['album']['artwork'] = track['album']['images'][0]['url']
                 track['lyrics'] = {}
 
@@ -242,7 +242,7 @@ def main():
                 if len(items) > 0:
                     Is_Sure = False
                     track = items[0]
-                    track['name'] = mep.remove_feat(track['name'])  # in case of featurings
+                    track['name'] = remove_feat(track['name'])  # in case of featurings
                     track['album']['artwork'] = track['album']['images'][0]['url']
                     track['lyrics'] = {}
 
@@ -332,7 +332,7 @@ def main():
 
             #getting lyrics 
             if params['get_lyrics']: 
-                (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
+                (track['lyrics']['text'], track['lyrics']['service']) = get_lyrics(track['artists'][0]['name'], track['name'])
 
             
 
@@ -353,7 +353,7 @@ def main():
 
             #getting lyrics 
             if params['get_lyrics']: 
-                (track['lyrics']['text'], track['lyrics']['service']) = mep.get_lyrics(track['artists'][0]['name'], track['name'])
+                (track['lyrics']['text'], track['lyrics']['service']) = get_lyrics(track['artists'][0]['name'], track['name'])
 
 
         # ----------------------------------------------------------------------------------------------------------- 4 #
@@ -428,7 +428,7 @@ def main():
 
                 # downloading image 
                 image_name = slugify(track['album']['name']+"_artwork")+".jpg"
-                image_path = mep.get_file(track['album']['artwork'], image_name, path)
+                image_path = dl_image(track['album']['artwork'], image_name, path, interface)
                 if image_path == "" :
                     image_name = ""
                 
