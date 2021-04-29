@@ -1,22 +1,17 @@
-# to 'slugify' string
-from slugify import slugify 
-import re
-import codecs
 
-# to get lyrics (crawler)
-from bs4 import BeautifulSoup  
-import requests
+from slugify import slugify 
+from bs4 import BeautifulSoup  # crawler
+import requests # get web pages
+import re # get all pages corresponding 
+import codecs # to decode text
+
 
 """ Removes the "'feat." type from the title
-    @returns corrected title """
+    @return corrected title """
 def remove_feat(title):
     if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
-        # complicated in case there is anothere paranthesis in the title
-        b = []
-        b = title.split("(")
-        title = b[0]
-        for i in range(1, len(b)-1):
-            title = title + "(" + b[i]
+        title =  title[0:title.rfind('(')]
+
     return title.strip()
 
 """ gets lyrics from web 
