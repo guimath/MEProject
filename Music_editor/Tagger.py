@@ -21,10 +21,10 @@ class Tagger:
 
     """gets specific info stored in a given music file
        @return title, artist and encoded_by tags if file could be read, None else """
-    def read_file(self, temp_path) :
-        _ , extension = os.path.splitext(temp_path)
+    def read_tags(self, file_path) :
+        _ , extension = os.path.splitext(file_path)
         if extension == ".mp3":
-            title, artist, encoded_by = self._read_mp3(temp_path)
+            title, artist, encoded_by = self._read_mp3(file_path)
         else:
             #Extension not supported | Should never happen
             return (None, None, None)
@@ -33,7 +33,7 @@ class Tagger:
     """uptades music file tags according to track object
         @return 0 if all went well, 1 if file was moved, 2 if file was uneditable
     """
-    def update_file(self, file_path, image_name, track):
+    def update_tags(self, file_path, image_name, track):
         # 0 remove_image - 0
         # 1 move_image   - 0
         # 2 no_image     - 0

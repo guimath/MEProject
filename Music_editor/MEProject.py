@@ -126,7 +126,7 @@ def main():
     # switch case equivalent
     while True:
         #print("STATE : "+str(state)) #DEBUG
-        # ----------------------------------------------------------------------------------------------------------- #
+        # ----------------------------------------------------------------------------------------------------------- 0 #
         # STATE 0 : Scanning folder
         if state == 0:
             state = 1 # Default = get title and artist automatically
@@ -164,7 +164,7 @@ def main():
             temp_path = path + file_name[file_nb]
 
             # trying to see if there are correct tags
-            title, artist, encoded_by = tagger.read_file(path + file_name[file_nb])
+            title, artist, encoded_by = tagger.read_tags(path + file_name[file_nb])
 
             if type(title) != type(None):
                 title = mep.remove_feat(title)
@@ -196,7 +196,7 @@ def main():
                 else:
                     (artist, title) = interface.get_title_manu("no title found")
         
-        # ----------------------------------------------------------------------------------------------------------- 3 #
+        # ----------------------------------------------------------------------------------------------------------- 2 #
         # STATE 2 : dl url
         elif state == 2 :
             state = 3 # Default = Search info on track
@@ -207,7 +207,7 @@ def main():
             remaining_file_nb += 1
             total_file_nb = remaining_file_nb
             interface.start_process(file_nb, total_file_nb, file_name[file_nb])
-            tagger.read_file(path + file_name[file_nb])
+            tagger.read_tags(path + file_name[file_nb])
             interface.artist_and_title(artist, title)
 
 
@@ -336,7 +336,7 @@ def main():
 
             
 
-        # ----------------------------------------------------------------------------------------------------------- 4 #
+        # ----------------------------------------------------------------------------------------------------------- 33 #
         # STATE 33 : getting other info (if file was not found on spotify)
         elif state == 33 :
             state = 4 # Default = User verif
@@ -433,7 +433,7 @@ def main():
                     image_name = ""
                 
                 # modifing the tags
-                ret = tagger.update_file(new_path,image_name,track)
+                ret = tagger.update_tags(new_path,image_name,track)
                 if ret > 0 :
                     interface.error(ret)
                     state = 20  # skipping file          
