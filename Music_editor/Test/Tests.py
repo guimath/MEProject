@@ -12,17 +12,18 @@ import os
 
 global filename
 
-class MyLogger(object):
+class _MyLogger(object):
     def debug(self, msg):
-        pass
+        pass#print(msg)
+        
 
     def warning(self, msg):
-        pass
+        pass#print(msg)
 
     def error(self, msg):
         print(msg)
 
-def my_hook(d):
+def _my_hook(d):
     global filename
     if d['status'] == 'finished':
         print('Done downloading, now converting ...')
@@ -35,26 +36,23 @@ def my_hook(d):
 def dl(url):
     ydl_opts = {
     'format': 'bestaudio/best',
-    'writeinfojson':True,
+    'noplaylist': True,
+    'outtmpl' : "ytDL_%(id)s.%(ext)s",
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
         'preferredquality': '192',
+    },{
+        'key': 'FFmpegMetadata',
     }],
-    'logger': MyLogger(),
-    'progress_hooks': [my_hook],
+    'logger': _MyLogger(),
+    'progress_hooks': [_my_hook],
     }
         
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-    path_info ="/home/guilhem/Documents/MEProject/"+filename.replace(".mp3",".info.json")
-    with open(path_info, mode="r") as j_object:
-                info = json.load(j_object)
-    pprint.pprint(info)
-    os.remove(path_info)
-
-    return filename,info['track'],info['uploader'].replace(" - Topic", "")
+    return filename
 
 
 
