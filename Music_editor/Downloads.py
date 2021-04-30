@@ -37,18 +37,20 @@ def dl_image(file_url, filename, path, interface):
 
 
 """ Downloading mp3 file from specified url
-    @return the filename, the title, and the artist
+    @return the filename
 """        
 def dl_music(url,path):
     global filename
     ydl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': True,
-    'writeinfojson':True,
+    'outtmpl' : "ytDL_%(id)s.%(ext)s", #name of output file
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
         'preferredquality': '192',
+    },{
+        'key': 'FFmpegMetadata', #adding metadata to file
     }],
     'logger': _MyLogger(),
     'progress_hooks': [_my_hook],
@@ -57,12 +59,7 @@ def dl_music(url,path):
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-    path_info =path+filename.replace(".mp3",".info.json")
-    with open(path_info, mode="r") as j_object:
-                info = json.load(j_object)
-    os.remove(path_info)
-
-    return filename,info.get('track'),info.get('uploader').replace(" - Topic", "").replace("VEVO", "")
+    return filename
 
 """ -----------------------------------------------
     --------------- Private methods ---------------
