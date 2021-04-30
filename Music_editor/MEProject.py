@@ -101,14 +101,14 @@ def main():
         params['Assume_mep_is_right'] = True
         params['Open_image_auto'] = False
 
-    elif mode_nb == 4: # start by downloading from yt
+    elif mode_nb == 3: # start by downloading from yt
         params['all_Auto'] = False
         params['Assume_mep_is_right'] = True
         params['Open_image_auto'] = False
         state = 2 #special start (skipping scan and )
 
     else :
-        mode_nb = 3  # discovery
+        mode_nb = 4  # discovery
         params['all_Auto'] = False
         params['Assume_mep_is_right'] = False
         params['Open_image_auto'] = True
@@ -202,13 +202,12 @@ def main():
         elif state == 2 :
             state = 3 # Default = Search info on track
 
-            tmp, title, artist = dl_music(interface.get_URL(),path)
-            file_name.append(tmp)
+            file_name.append(dl_music(interface.get_URL(),path))
             file_extension.append(".mp3")
             remaining_file_nb += 1
             total_file_nb = remaining_file_nb
             interface.start_process(file_nb, total_file_nb, file_name[file_nb])
-            tagger.read_tags(path + file_name[file_nb])
+            title, artist, encoded_by = tagger.read_tags(path + file_name[file_nb])
             interface.artist_and_title(artist, title)
 
 
@@ -234,7 +233,12 @@ def main():
                 track['album']['artwork'] = track['album']['images'][0]['url']
                 track['lyrics'] = {}
 
-            elif not params['all_Auto']:
+            
+            elif params['all_Auto']:
+                interface.error(5)  # music not found -> skipping
+                state = 20  # skip track
+
+            else :
                 # trying without the artist only if user can verify
                 search = "track:" + title.replace("'", "")
                 results = sp.search(q=search, type = "track", limit = 1)
@@ -246,21 +250,18 @@ def main():
                     track['album']['artwork'] = track['album']['images'][0]['url']
                     track['lyrics'] = {}
 
-            # music not found -> switch state
-            elif params['all_Auto']:
-                interface.error(5)  # music not found
-                state = 20  # skip track
+            
 
-            elif interface.ask(reason = "error 808 : music not found..." , message = "Do you want to retry with another spelling ?"):
-                (artist, title) = interface.get_title_manu("")
-                state = 3  # search info on track
+                elif interface.ask(reason = "error 808 : music not found..." , message = "Do you want to retry with another spelling ?"):
+                    (artist, title) = interface.get_title_manu("")
+                    state = 3  # search info on track
 
-            elif interface.ask("Fill the data manually ?"):
-                state = 31  # manual tagging
+                elif interface.ask("Fill the data manually ?"):
+                    state = 31  # manual tagging
 
-            else:
-                interface.warning("no action required", "file was skipped")  # music not found# nothing could be done / wanted to be done
-                state = 20  # skip track
+                else:
+                    interface.warning("no action required", "file was skipped")  # music not found# nothing could be done / wanted to be done
+                    state = 20  # skip track
 
         # ----------------------------------------------------------------------------------------------------------- 31 #
         # STATE 31 : manual tagging
@@ -496,7 +497,7 @@ def main():
                 remaining_file_nb = 0
                 total_file_nb = 0
                 state = 0
-            elif mode_nb == 4 :
+            elif mode_nb == 3 :
                 # reseting variables
                 file_extension = [".mp3"]
                 file_name = ["music.mp3"]
