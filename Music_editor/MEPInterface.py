@@ -26,17 +26,17 @@ class Interface:
     """ Welcoming user and getting mode
         @return mode_nb the mode number (between 1 and 3) chosen by user """
     def global_start(self):
-        mode_name = ['full auto', 'semi auto', 'discovery','download']
+        mode_name = ['full auto', 'semi auto','downloads', 'discovery']
         print("")
-        print("         Welcome to MEProject")
+        print("               Welcome to MEProject")
         print("")
-        print("-------------------------------------")
-        print("|           mode selection          |")
-        print("+-----------------------------------+")
-        print("|     1     |     2     |     3     |")
-        print("+-----------+-----------+-----------+")
-        print("| full auto | semi auto | discovery |")
-        print("-------------------------------------")
+        print("+-----------------------------------------------+")
+        print("|                 mode selection                |")
+        print("+-----------------------------------------------+")
+        print("|     1     |     2     |     3     |     4     |")
+        print("+-----------------------------------------------+")
+        print("| full auto | semi auto | downloads | discovery |")
+        print("+-----------------------------------------------+")
         print("")
         if self.debug :
             print("mode : 1")
@@ -45,7 +45,7 @@ class Interface:
             mode_nb = int(input("mode : "))
         
         if mode_nb > 4:
-            mode_nb = 3
+            mode_nb = 4
         elif mode_nb <= 1:
             mode_nb = 1
             self.all_Auto = True
