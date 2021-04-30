@@ -497,7 +497,14 @@ def main():
                 remaining_file_nb = 0
                 total_file_nb = 0
                 state = 0
-
+            elif mode_nb == 4 :
+                # reseting variables
+                file_extension = [".mp3"]
+                file_name = ["music.mp3"]
+                file_nb = 1
+                remaining_file_nb = 0
+                total_file_nb = 0
+                state = 2
             else:
                 interface.end_full_auto(total_file_nb, treated_file_nb)
                 sys.exit("")
