@@ -55,8 +55,10 @@ class Interface:
         return mode_nb
 
     def get_URL(self) :
-        return input("URL to download : ")
-
+        print("\n")
+        url = input("copy the URL to download : ")
+        print("downloading and converting ...")
+        return url
 
     """ error message for when user dropped a file in wrong format
         Displays the name of file in wrong format and a list of accepted formats"""
