@@ -43,6 +43,7 @@ def dl_music(url,path):
     global filename
     ydl_opts = {
     'format': 'bestaudio/best',
+    'noplaylist': True,
     'writeinfojson':True,
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -61,7 +62,7 @@ def dl_music(url,path):
                 info = json.load(j_object)
     os.remove(path_info)
 
-    return filename,info.get('track'),info.get('uploader').replace(" - Topic", "")
+    return filename,info.get('track'),info.get('uploader').replace(" - Topic", "").replace("VEVO", "")
 
 """ -----------------------------------------------
     --------------- Private methods ---------------
