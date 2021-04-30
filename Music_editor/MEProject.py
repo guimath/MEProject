@@ -457,6 +457,7 @@ def main():
             try :
                 if os.path.exists(path+params['folder_name']+path_separator+new_file_name):
                     interface.warning("file already exists in folder", "keeping this file in main folder")
+                    ignore.append(file_name[file_nb])
                 else :
                     treated_file_nb += 1  # file correctly treated
                     shutil.move(new_path, path+params['folder_name']) # place in first folder
@@ -464,8 +465,6 @@ def main():
             except Exception as e:
                 interface.warning("Unexpected error:" + sys.exc_info()[0], "keeping this file in main folder")
                 
-
-            # changing state
             if remaining_file_nb > 1:
                 file_nb += 1  # file being treated = next in the list
                 remaining_file_nb -= 1  # one file done
