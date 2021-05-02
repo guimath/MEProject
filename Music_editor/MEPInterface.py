@@ -57,8 +57,23 @@ class Interface:
     def get_URL(self) :
         print("\n")
         url = input("copy the URL to download : ")
-        print("downloading and converting ...")
         return url
+
+    class Dl_Logger(object):
+        def debug(self, msg):
+            if "[download] Downloading" in msg:
+                print(msg.replace("[download] Downloading",""))
+            
+        def warning(self, msg):
+            pass
+
+        def error(self, msg):
+            print(msg)
+
+    def Dl_hook(self, d):
+        # could add a progress bar'''
+        if d['status'] == 'finished':
+            print('Done downloading, now converting ...')
 
     """ error message for when user dropped a file in wrong format
         Displays the name of file in wrong format and a list of accepted formats"""
@@ -175,3 +190,4 @@ class Interface:
         else:
             print("{} files correctly processed out of {}".format(
                 treated_file_nb, total_file_nb))
+

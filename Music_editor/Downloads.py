@@ -37,13 +37,11 @@ def dl_image(file_url, filename, path, interface):
 
 
 """ Downloading mp3 file from specified url
-    @return the filename
 """        
-def dl_music(url,path):
-    global filename
+def dl_music(url,path,no_playlist,logger, hook):
     ydl_opts = {
     'format': 'bestaudio/best',
-    'noplaylist': True,
+    'noplaylist': no_playlist,
     'outtmpl' : "ytDL_%(id)s.%(ext)s", #name of output file
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
@@ -52,33 +50,11 @@ def dl_music(url,path):
     },{
         'key': 'FFmpegMetadata', #adding metadata to file
     }],
-    'logger': _MyLogger(),
-    'progress_hooks': [_my_hook],
+    'logger': logger,
+    'progress_hooks': hook,
     }
         
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         ydl.download([url])
 
-    return filename
-
-""" -----------------------------------------------
-    --------------- Private methods ---------------
-    ----------------------------------------------- 
-"""
     
-
-class _MyLogger(object):
-    def debug(self, msg):
-        pass
-
-    def warning(self, msg):
-        pass
-
-    def error(self, msg):
-        print(msg)
-
-def _my_hook(d):
-    global filename
-    if d['status'] == 'finished':
-        filename, _=d['filename'].split(".")
-        filename += ".mp3"
