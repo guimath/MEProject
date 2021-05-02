@@ -9,55 +9,24 @@ import youtube_dl
 import pprint
 import json
 import os
+import shutil
 
-global filename
+filename = "file.txt"
+artist = "artist"
+album = "album"
+path_separator = os.path.sep
+folder = artist+path_separator+album
+print(folder)
+if os.path.exists(folder) :
+    if os.path.exists(folder+path_separator+filename) :
+        pass# file already exists
+    else :
+        shutil.move(filename,folder)
 
-class _MyLogger(object):
-    def debug(self, msg):
-        pass#print(msg)
-        
+else :
+    os.makedirs(folder)
+    shutil.move(filename,folder)
 
-    def warning(self, msg):
-        pass#print(msg)
-
-    def error(self, msg):
-        print(msg)
-
-def _my_hook(d):
-    global filename
-    if d['status'] == 'finished':
-        print('Done downloading, now converting ...')
-        filename=d['filename'].replace(".webm",".mp3")
-
-
-
-
-
-def dl(url):
-    ydl_opts = {
-    'format': 'bestaudio/best',
-    'noplaylist': True,
-    'outtmpl' : "ytDL_%(id)s.%(ext)s",
-    'postprocessors': [{
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'mp3',
-        'preferredquality': '192',
-    },{
-        'key': 'FFmpegMetadata',
-    }],
-    'logger': _MyLogger(),
-    'progress_hooks': [_my_hook],
-    }
-        
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
-
-    return filename
-
-
-
-
-print(dl("https://www.youtube.com/watch?v=1uYWYWPc9HU"))
 
 
 
