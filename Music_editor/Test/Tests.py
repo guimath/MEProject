@@ -11,14 +11,12 @@ import json
 import os
 import shutil
 
-filename = "file.txt"
+filename = "file.mp3"
 artist = "artist"
 album = "album"
-path_separator = os.path.sep
-folder = artist+path_separator+album
-print(folder)
+folder = artist+os.path.sep+album
 if os.path.exists(folder) :
-    if os.path.exists(folder+path_separator+filename) :
+    if os.path.exists(folder+os.path.sep+filename) :
         pass# file already exists
     else :
         shutil.move(filename,folder)

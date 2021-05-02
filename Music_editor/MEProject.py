@@ -48,8 +48,7 @@ def main():
     no_playlist = True # for downloading
 
     # Getting path (in the directory of the program)
-    path_separator = os.path.sep 
-    path = os.path.dirname(os.path.realpath(__file__)) + path_separator
+    path = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
 
     # global (to be shared with other libraries)
     params = {} 
@@ -464,7 +463,7 @@ def main():
             new_path = path + new_file_name
 
             try :
-                if os.path.exists(path+params['folder_name']+path_separator+new_file_name):
+                if os.path.exists(path+params['folder_name']+os.path.sep+new_file_name):
                     interface.warning("file already exists in folder", "keeping this file in main folder")
                     ignore.append(file_name[file_nb])
                 else :
