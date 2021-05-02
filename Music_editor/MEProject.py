@@ -45,6 +45,7 @@ def main():
     title = ""  # temporary string to store track title
     artist = ""  # temporary string to store artist name
     Is_Sure = True  # to check wether a file needs to be checked by user
+    no_playlist = True # for downloading
 
     # Getting path (in the directory of the program)
     path_separator = os.path.sep 
@@ -101,11 +102,13 @@ def main():
         params['Assume_mep_is_right'] = True
         params['Open_image_auto'] = False
 
-    elif mode_nb == 3: # start by downloading from yt
+    elif mode_nb == 3 : # start by downloading from yt
         params['all_Auto'] = False
         params['Assume_mep_is_right'] = True
         params['Open_image_auto'] = False
+        no_playlist = not interface.ask("download playlists ?")
         state = 2 #special start (skipping scan and )
+    
 
     else :
         mode_nb = 4  # discovery
@@ -113,6 +116,7 @@ def main():
         params['Assume_mep_is_right'] = False
         params['Open_image_auto'] = True
 
+    
     #initialising libs
     tagger = Tagger.Tagger(params,path)
 
@@ -197,18 +201,22 @@ def main():
                 else:
                     (artist, title) = interface.get_title_manu("no title found")
         
+
         # ----------------------------------------------------------------------------------------------------------- 2 #
         # STATE 2 : dl url
         elif state == 2 :
             state = 3 # Default = Search info on track
-
-            file_name.append(dl_music(interface.get_URL(),path))
+            url = interface.get_URL()
+            dl_music(url, path, no_playlist, interface.Dl_Logger(), [interface.Dl_hook])
+            state = 0
+            
+            """file_name.append(dl_music(interface.get_URL(),path))
             file_extension.append(".mp3")
             remaining_file_nb += 1
             total_file_nb = remaining_file_nb
             interface.start_process(file_nb, total_file_nb, file_name[file_nb])
-            title, artist, encoded_by = tagger.read_tags(path + file_name[file_nb])
-            interface.artist_and_title(artist, title)
+            title, artist, encoded_by = tagger.read_tags(path + file_name[file_nb])"""
+            #interface.artist_and_title(artist, title)
 
 
         # ----------------------------------------------------------------------------------------------------------- 3 #
