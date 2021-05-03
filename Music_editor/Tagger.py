@@ -29,8 +29,8 @@ class Tagger:
             return (None, None, None)
         return title, artist, encoded_by
 
-    """uptades music file tags according to track object
-        @return 0 if all went well, 1 if file was moved, 2 if file was uneditable
+    """updates music file tags according to track object
+        @return 0 if all went well, 1 if file was moved, 2 if file was un-editable
     """
     def update_tags(self, file_name, image_name, track):
         # 0 remove_image - 0
@@ -64,7 +64,7 @@ class Tagger:
 
     def _write_mp3(self, file_name, image_name, track):
         ret = 2 # no image
-        # modifing the tags
+        # modifying the tags
         tag = eyed3.id3.tag.Tag()
         if tag.parse(fileobj = file_name):
             tag.title = track['name']
@@ -99,9 +99,8 @@ class Tagger:
             # works but no way to get info
             # tag.composer = ""
 
-            # doesn't work
-            #  # doenst work + no easy way to get info
-            # tag.artist_origin = "France" # doesent work + no easy way to get info
+            # doesn't work and no easy way to get info
+            # tag.artist_origin = "France" 
 
             # image
             if (image_name != ""):
