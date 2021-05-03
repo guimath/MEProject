@@ -341,6 +341,9 @@ def main():
             #getting lyrics 
             if params['get_lyrics']: 
                 (track['lyrics']['text'], track['lyrics']['service']) = get_lyrics(track['artists'][0]['name'], track['name'])
+            else :
+                track['lyrics']['service'] = "ignored"
+                track['lyrics']['text'] =  ""
 
             
 
@@ -461,15 +464,18 @@ def main():
             # No default state (either restart or ending)
 
             new_path = path + new_file_name
-
+            folder_path = path+params['folder_name']+os.path.sep+track['artists'][0]['name']+os.path.sep+track['album']['name']
             try :
-                if os.path.exists(path+params['folder_name']+os.path.sep+new_file_name):
+                if os.path.exists(folder_path+os.path.sep+new_file_name) :
                     interface.warning("file already exists in folder", "keeping this file in main folder")
                     ignore.append(file_name[file_nb])
                 else :
+                    if not os.path.exists(folder_path):
+                        os.makedirs(folder_path) #creating folder
+
+                    shutil.move(new_path,folder_path) # place in correct folder
                     treated_file_nb += 1  # file correctly treated
-                    shutil.move(new_path, path+params['folder_name']) # place in first folder
-                    
+
             except Exception as e:
                 interface.warning("Unexpected error:" + sys.exc_info()[0], "keeping this file in main folder")
                 
