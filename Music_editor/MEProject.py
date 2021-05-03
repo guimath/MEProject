@@ -112,10 +112,10 @@ def main():
         params['Open_image_auto'] = True
 
     
-    #initialising libs
+    #initializing libs
     tagger = Tagger.Tagger(params)
 
-    # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
+    # Spotify api authorization Secret codes (DO NOT COPY / SHARE)
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
                                                                client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))        
     
@@ -264,7 +264,7 @@ def main():
                     state = 31  # manual tagging
 
                 else:
-                    interface.warning("no action required", "file was skipped")  # music not found# nothing could be done / wanted to be done
+                    interface.warning("no action required", "file was skipped")  # music not found nothing could be done / wanted to be done
                     state = 20  # skip track
 
         # ----------------------------------------------------------------------------------------------------------- 31 #
@@ -298,7 +298,7 @@ def main():
 
             track['album']['name'] = input("album        : ")
             track['album']['release_date'] = input("year         : ")
-            track['track_number'] = int(input("track number : "))   # TODO add szecurity (check if its int) error : ValueError:
+            track['track_number'] = int(input("track number : "))   # TODO add security (check if its int) error : ValueError:
             track['album']['total_tracks'] = int(input("out of       : "))
 
             # getting user to pick an artwork
