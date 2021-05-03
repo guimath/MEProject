@@ -37,7 +37,7 @@ class Tagger:
         # 1 move_image   - 0
         # 2 no_image     - 0
         # 3 file_was_moved - 2
-        # 4 file_uneditable - 1
+        # 4 file_un-editable - 1
         action = 2
         _ , extension = os.path.splitext(file_name)
         if extension == ".mp3":
@@ -53,14 +53,7 @@ class Tagger:
         if action == 0 :
             # removing image from folder
             os.remove(image_name)
-        
-        elif action == 1 :
-            # moving image in directory (or deleting if already present)
-            if not os.path.exists(self.folder + os.path.sep + image_name):
-                # place in folder
-                shutil.move(image_name, self.folder)
-            else:
-                os.remove(image_name)
+    
 
         return self.state[action]
 

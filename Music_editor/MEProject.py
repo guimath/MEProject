@@ -458,7 +458,6 @@ def main():
             # No default state (either restart or ending)
 
             folder = params['folder_name']+os.path.sep+slugify(track['artists'][0]['name'], separator=" ")+os.path.sep+slugify(track['album']['name'], separator=" ")
-            print(folder)
             try :
                 if os.path.exists(folder+os.path.sep+new_file_name) :
                     interface.warning("file already exists in folder", "keeping this file in main folder")
@@ -467,7 +466,13 @@ def main():
                     if not os.path.exists(folder):
                         os.makedirs(folder) #creating folder
 
-                    shutil.move(new_file_name,folder) # place in correct folder
+                    shutil.move(new_file_name,folder) # place music file in correct folder
+                    if not params['store_image_in_file'] :
+                        if not os.path.exists(folder+os.path.sep+image_name) :
+                            shutil.move(image_name,folder) #place album cover in correct folder
+                        else :
+                            os.remove(image_name) #removing if already present
+
                     treated_file_nb += 1  # file correctly treated
 
             except Exception as e:
