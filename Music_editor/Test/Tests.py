@@ -10,24 +10,17 @@ import pprint
 import json
 import os
 import shutil
+import string
 
-filename = "file.mp3"
-artist = "artist"
-album = "album"
-folder = artist+os.path.sep+album
-if os.path.exists(folder) :
-    if os.path.exists(folder+os.path.sep+filename) :
-        pass# file already exists
-    else :
-        shutil.move(filename,folder)
+def clean_string(data) :
+    for c in string.punctuation:
+        data = data.replace(c, "")
 
-else :
-    os.makedirs(folder)
-    shutil.move(filename,folder)
+    data = data.replace(" ", "-")
 
+    return slugify(data)
 
-
-
+print(clean_string("Π eérfesà.o") + "-" + clean_string("O OG"))
 
 '''
 class GeniusCrawler(Crawler):
