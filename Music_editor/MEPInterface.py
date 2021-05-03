@@ -1,3 +1,5 @@
+import os
+
 class Interface:
     """ Everything that has to do with the visual interface is done here"""
 
@@ -60,10 +62,18 @@ class Interface:
         return url
 
     class Dl_Logger(object):
+        def __init__(self):
+            self.file_nb = ":"
+
         def debug(self, msg):
-            if "[download] Downloading" in msg:
-                print(msg.replace("[download] Downloading",""))
-            
+            #print("MSG : ", msg)
+            if "[download] Downloading playlist" in msg:
+                print("-->",msg.replace("[download] Downloading ",""))#"playlist: playlist_name"
+            elif "[download] Downloading" in msg :
+                self.file_nb = msg.replace("[download] Downloading ","")+" :" #"video 1 of 12 :""
+            elif "[download] Destination:" in msg:
+                _title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))
+                print("Now downloading",self.file_nb ,_title)
         def warning(self, msg):
             pass
 
@@ -73,7 +83,7 @@ class Interface:
     def Dl_hook(self, d):
         # could add a progress bar'''
         if d['status'] == 'finished':
-            print('Done downloading, now converting ...')
+            print('Done downloading, now converting ...\n')
 
     """ error message for when user dropped a file in wrong format
         Displays the name of file in wrong format and a list of accepted formats"""
