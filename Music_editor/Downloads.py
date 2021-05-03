@@ -7,12 +7,9 @@ import os
 import requests
 import shutil
 
-global filename
-
 """ Downloading picture from specified url as specified filename to specified path
-    @return the complete path of the new downloaded file if worked correctly, else returns 0"""
-def dl_image(file_url, filename, path, interface):
-    path = path + filename
+    @return the name of the new downloaded file if worked correctly, else returns '' """
+def dl_image(file_url, filename, interface):
     # Open the url image, set stream to True, this will return the stream content.
     try:
         r = requests.get(file_url, stream=True)
@@ -23,10 +20,10 @@ def dl_image(file_url, filename, path, interface):
             r.raw.decode_content = True
 
             # Open a local file with wb ( write binary ) permission.
-            with open(path, 'wb') as f:
+            with open(filename, 'wb') as f:
                 shutil.copyfileobj(r.raw, f)
 
-            return path
+            return filename
         else:
             interface.warning("image url can't be reached", "not adding image to file")
             return ""
@@ -38,7 +35,7 @@ def dl_image(file_url, filename, path, interface):
 
 """ Downloading mp3 file from specified url
 """        
-def dl_music(url,path,no_playlist,logger, hook):
+def dl_music(url,no_playlist,logger, hook):
     ydl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': no_playlist,

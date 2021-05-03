@@ -3,7 +3,6 @@ import os
 
 import sys   # to get the name of the prog file
 import time  # for sleep function
-from pathlib import Path # to get path to directory
 
 # for file modification
 import json   # to parse config file
@@ -48,8 +47,7 @@ def main():
     no_playlist = True # for downloading
 
     # Getting path (in the directory of the program)
-    path = os.path.dirname(os.path.realpath(__file__)) + os.path.sep
-
+    #path = ""#os.path.dirname(os.path.realpath(__file__)) + os.path.sep
     # global (to be shared with other libraries)
     params = {} 
     params['add_signature'] = False # param (maybe changed in config... not sure yet)
@@ -68,7 +66,7 @@ def main():
     # getting info from config file :
     config = {}
     try:
-        with open(path+"config.json", mode="r") as j_object:
+        with open("config.json", mode="r") as j_object:
             config = json.load(j_object)
 
     except FileNotFoundError:
@@ -117,15 +115,15 @@ def main():
 
     
     #initialising libs
-    tagger = Tagger.Tagger(params,path)
+    tagger = Tagger.Tagger(params)
 
     # Spotify api autorisation Secret codes (DO NOT COPY / SHARE)
     sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",
                                                                client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2"))        
     
     #adding folder if not existing
-    if params['folder_name'] not in os.listdir(path):
-        os.makedirs(path+params['folder_name'])
+    if params['folder_name'] not in os.listdir():
+        os.makedirs(params['folder_name'])
 
     # switch case equivalent
     while True:
@@ -137,7 +135,7 @@ def main():
 
             # scanning folder
             wrong_format = False
-            for temp_file_name in os.listdir(path):
+            for temp_file_name in os.listdir():
                 _ , temp_file_extension = os.path.splitext(temp_file_name)
 
                 if temp_file_extension in params['accepted_extensions'] and temp_file_name not in ignore:
@@ -165,10 +163,9 @@ def main():
         elif state == 1:
             state = 3  # Default = search info on track 
             interface.start_process(file_nb, total_file_nb, file_name[file_nb])
-            temp_path = path + file_name[file_nb]
 
             # trying to see if there are correct tags
-            title, artist, encoded_by = tagger.read_tags(path + file_name[file_nb])
+            title, artist, encoded_by = tagger.read_tags(file_name[file_nb])
 
             if type(title) != type(None):
                 title = remove_feat(title)
@@ -188,7 +185,9 @@ def main():
                     else:
                         new_file_name = file_name[file_nb]
                         state = 6  # just moving the file in correct directory
-                    
+
+                elif mode_nb == 3 : 
+                    pass #assuming tags are ok
                 elif interface.ask("Wrong ?"):
                     # getting the user to add title and artist
                     (artist, title) = interface.get_title_manu()
@@ -206,7 +205,7 @@ def main():
         elif state == 2 :
             state = 3 # Default = Search info on track
             url = interface.get_URL()
-            dl_music(url, path, no_playlist, interface.Dl_Logger(), [interface.Dl_hook])
+            dl_music(url, no_playlist, interface.Dl_Logger(), [interface.Dl_hook])
             state = 0
             
             """file_name.append(dl_music(interface.get_URL(),path))
@@ -365,7 +364,9 @@ def main():
             #getting lyrics 
             if params['get_lyrics']: 
                 (track['lyrics']['text'], track['lyrics']['service']) = get_lyrics(track['artists'][0]['name'], track['name'])
-
+            else :
+                track['lyrics']['service'] = "ignored"
+                track['lyrics']['text'] =  ""
 
         # ----------------------------------------------------------------------------------------------------------- 4 #
         # STATE 4 : User verification (track object and title needed)
@@ -409,7 +410,7 @@ def main():
 
             try :
                 # making sure the file is writable : 
-                os.chmod(path+file_name[file_nb], stat.S_IRWXU)
+                os.chmod(file_name[file_nb], stat.S_IRWXU)
 
                 # preparing new file name and directory path 
                 if track['track_number'] != None :
@@ -421,12 +422,9 @@ def main():
                     new_file_name = slugify(track['name'],separator='_')
                 new_file_name = new_file_name + file_extension[file_nb]  #adding extension
 
-                temp_path = path + file_name[file_nb]
-                new_path = path + new_file_name
-
                 # changing name of the file
-                os.path.realpath(temp_path)
-                os.rename(temp_path, new_path)
+                os.path.realpath(file_name[file_nb])
+                os.rename(file_name[file_nb], new_file_name)
 
                 # adding featured artist to title 
                 nb_artist = len(track['artists'])
@@ -439,12 +437,10 @@ def main():
 
                 # downloading image 
                 image_name = slugify(track['album']['name']+"_artwork")+".jpg"
-                image_path = dl_image(track['album']['artwork'], image_name, path, interface)
-                if image_path == "" :
-                    image_name = ""
+                image_name = dl_image(track['album']['artwork'], image_name, interface)
                 
                 # modifing the tags
-                ret = tagger.update_tags(new_path,image_name,track)
+                ret = tagger.update_tags(new_file_name,image_name,track)
                 if ret > 0 :
                     interface.error(ret)
                     state = 20  # skipping file          
@@ -463,17 +459,16 @@ def main():
         elif state == 6:
             # No default state (either restart or ending)
 
-            new_path = path + new_file_name
-            folder_path = path+params['folder_name']+os.path.sep+track['artists'][0]['name']+os.path.sep+track['album']['name']
+            folder = params['folder_name']+os.path.sep+track['artists'][0]['name']+os.path.sep+track['album']['name']
             try :
-                if os.path.exists(folder_path+os.path.sep+new_file_name) :
+                if os.path.exists(folder+os.path.sep+new_file_name) :
                     interface.warning("file already exists in folder", "keeping this file in main folder")
                     ignore.append(file_name[file_nb])
                 else :
-                    if not os.path.exists(folder_path):
-                        os.makedirs(folder_path) #creating folder
+                    if not os.path.exists(folder):
+                        os.makedirs(folder) #creating folder
 
-                    shutil.move(new_path,folder_path) # place in correct folder
+                    shutil.move(new_file_name,folder) # place in correct folder
                     treated_file_nb += 1  # file correctly treated
 
             except Exception as e:
