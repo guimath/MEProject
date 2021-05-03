@@ -46,8 +46,6 @@ def main():
     Is_Sure = True  # to check wether a file needs to be checked by user
     no_playlist = True # for downloading
 
-    # Getting path (in the directory of the program)
-    #path = ""#os.path.dirname(os.path.realpath(__file__)) + os.path.sep
     # global (to be shared with other libraries)
     params = {} 
     params['add_signature'] = False # param (maybe changed in config... not sure yet)
