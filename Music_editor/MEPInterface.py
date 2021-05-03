@@ -163,7 +163,7 @@ class Interface:
         print("album        : {}\nGenre        : {}\nrelease date : {}\nTrack number : {} out of {}".format(
             album, genre, release_date, track_nb, total_track_nb))
         if lyrics_service != "ignored" :
-            print("Lyrics       : ", lyrics_service)
+            print("Lyrics       :",lyrics_service)
         # there would also be a picture display if all was great...
 
     """ error message for when a file is skiped 
