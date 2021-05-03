@@ -457,7 +457,8 @@ def main():
         elif state == 6:
             # No default state (either restart or ending)
 
-            folder = params['folder_name']+os.path.sep+track['artists'][0]['name']+os.path.sep+track['album']['name']
+            folder = params['folder_name']+os.path.sep+slugify(track['artists'][0]['name'], separator=" ")+os.path.sep+slugify(track['album']['name'], separator=" ")
+            print(folder)
             try :
                 if os.path.exists(folder+os.path.sep+new_file_name) :
                     interface.warning("file already exists in folder", "keeping this file in main folder")
