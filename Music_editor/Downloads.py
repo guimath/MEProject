@@ -39,7 +39,7 @@ def dl_music(url,no_playlist,logger, hook):
     ydl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': no_playlist,
-    'outtmpl' : "ytDL_%(id)s.%(ext)s", #name of output file
+    'outtmpl' : "yt-DL_%(title)s.%(ext)s", #name of output file
     'postprocessors': [{
         'key': 'FFmpegExtractAudio',
         'preferredcodec': 'mp3',
