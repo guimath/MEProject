@@ -15,13 +15,13 @@ def remove_feat(title):
 
     return title.strip()
 
+""" Removes / modifies none ascii characters and punctuation
+    @return the clean string"""
 def clean_string(data) :
     for c in string.punctuation:
         data = data.replace(c, "")
 
-    data = data.replace(" ", "-")
-
-    return slugify(data)
+    return data.replace(" ", "-")
 
 """ gets lyrics from web 
     @return tuple containing two strings : lyrics and the service used (i.e. genius etc) """
@@ -29,7 +29,6 @@ def get_lyrics(artist, title):
     #slugify both
     title = clean_string(title)
     artist = clean_string(artist)
-    #artist = artist[0] + artist[1:].lower() 
     lyrics = _musixmatch(artist, title)
     service = "musixmatch"
     if lyrics == "Error1" :
@@ -64,9 +63,9 @@ def _musixmatch(artist, title):
         return props_script.contents[0]
 
     try:
-        search_url = "https://www.musixmatch.com/search/%s-%s/tracks" % (artist, title)
+        url = "https://www.musixmatch.com/search/%s-%s/tracks" % (artist, title)
         header = {"User-Agent": "curl/7.9.8 (i686-pc-linux-gnu) libcurl 7.9.8 (OpenSSL 0.9.6b) (ipv6 enabled)"}
-        search_results = requests.get(search_url, headers=header)
+        search_results = requests.get(url, headers=header)
         soup = BeautifulSoup(search_results.text, 'html.parser')
         page = re.findall('"track_share_url":"([^"]*)', extract_mxm_props(soup))
         if page:
@@ -89,10 +88,9 @@ def _musixmatch(artist, title):
     return lyrics
 
 def _genius(artist, title):
-    url = ""
     lyrics = "Error1"
     try:
-        url = "http://genius.com/%s-%s-lyrics" % (artist,title)
+        url = "http://genius.com/%s-%s-lyrics" % (slugify(artist),slugify(title))
         lyrics_page = requests.get(url)
         soup = BeautifulSoup(lyrics_page.text, 'html.parser')
         lyrics_container = soup.find("div", {"class": "lyrics"})
