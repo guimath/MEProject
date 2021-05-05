@@ -1,0 +1,5 @@
+eyed3
+python-slugify
+spotipy
+bs4
+youtube-dl
