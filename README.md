@@ -38,7 +38,7 @@ This file allows you to change what the program will do. You can modify it by si
 **input needed :** this mode is heavily reliant on user verification so you will have to input a lot of info. This allows you to control everything and test the program before using it on a bigger scale.  
 **Speed :** this mode is not designed to be quick, it is simply recommended that you start with this mode if you're weary of my coding skills. You should not be using this mode for more than a few files.
 
-**output :** it will put all the files correctly processed in the music folder (organized as ``artist/album/track_nb-title.mp3``) and leave the untreated files where they were
+**output :** it will put all the files correctly processed in the music folder (organized as ``artist/album/track_nb-title_of_track.mp3``) and leave the untreated files where they were
 
 
 ## Developers
@@ -47,9 +47,8 @@ This file allows you to change what the program will do. You can modify it by si
 * `python-slugify` : to remove problematic characters
 * `spotipy` : spotify api to search infos
 * `bs4` : to scrap website for infos
-* `webbrowser` : to open links in your browser
 * `youtube-dl` : to download music from youtube
 
-To add those simply launch your console and type "pip install _nameOfPackage_"  
+To install those, you can do for each package "pip install _nameOfPackage_"  or you can run "pip install requirements.txt"
 
 The youtube-dl package also requires ffprobe or ffmpeg. Installation varies depending on the os.
