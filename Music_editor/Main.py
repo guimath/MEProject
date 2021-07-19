@@ -1,38 +1,130 @@
-
+# -*-coding:utf-8 -*
 import os
+import sys
 import time
+
+# for file modification
+import json   # to parse config file
+import shutil  # to move file
+import stat   # to change read/write file status
+
+# GUI
 import tkinter as tk
 from tkinter import Label, messagebox
-import threading
-from Downloads import *
+from multiprocessing import Process
+from tkinter.constants import S
 from PIL import Image, ImageTk
+
+# for spotify api
+import spotipy  # Spotify API
+from spotipy.oauth2 import SpotifyClientCredentials
+
+# formating strings
+from slugify import slugify
+
+# Local Libs
+import Downloads as dls
+import Utilitaries as util
+import Tagger
+
+
+
 
 class Application(tk.Frame):
     def __init__(self, master=None, debug=False):
-        super().__init__(master)
+        # Window init
+        super().__init__(master) 
         self.master = master
         self.master.geometry('800x500')
         self.master.title("MEProject")
         self.grid()
+
+        # Var init : 
+        #local : 
+        self.treated_file_nb = 0
+        self.remaining_file_nb = 0
+        self.total_file_nb = 0
+        self.file_nb = 1
+        self.not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
+        self.file_extension = [".mp3"]   # will store all file extensions
+        self.file_name = ["music.mp3"]   # will store all file names
+        self.ignore = ["music.mp3"]
+
+        self.title = ""  # temporary string to store track title
+        self.artist = ""  # temporary string to store artist name
+
+        self.no_playlist = True # for downloading
         self.debug = debug
         self.full_auto = False
+        self.logger = self.dl_logger(self)
+        
+        # Spotify api authorization Secret codes (DO NOT COPY / SHARE)
+        self.sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",                                                        client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2")) 
+        
+        #global (to be shared with other libraries)
+        self.params = {} 
+        self.params['add_signature'] = False # param (maybe changed in config... not sure yet)
+        self.params['debug'] = False # param (maybe changed in config... not sure yet)
+        self.params['accepted_extensions'] = {}
+        self.params['accepted_extensions'] = [".mp3"]  # list of all accepted extensions
 
+
+        # getting info from config file :
+        config = {}
+        try:
+            with open("config.json", mode="r") as j_object:
+                config = json.load(j_object)
+
+        except FileNotFoundError:
+            self.warn("No config file found \nusing standard setup")
+
+        except json.JSONDecodeError as e:
+            self.warn("At line " + str(e.lineno)+ " of the config file, bad syntax (" + str(e.msg) + ")\nusing standard setup") 
+        
+        except Exception as e :
+            self.warn("unknown error : " + str(e) + "\nusing standard setup")
+
+        self.params['prefered_feat_acronyme'] = str (config.get("prefered_feat_sign", "feat."))
+        self.params['default_genre'] = str(config.get("default_genre","Other"))
+        self.params['folder_name'] = str (config.get("folder_name","music"))
+        self.params['get_label'] = bool (config.get("get_label",True))
+        self.params['get_bpm'] = bool (config.get("get_bpm",True))
+        self.params['get_lyrics'] = bool (config.get("get_lyrics",True))
+        self.params['store_image_in_file'] = bool (config.get("store_image_in_file",True))
+        
+        if self.params['add_signature'] :
+            self.params['signature'] = "MEP by GM"
+        else :
+            self.params['signature'] = "---"
+        #temp : 
         self.filename = "music.mp3"
-        #self.dispaly_infos({'album':{"name":"album name", "release_date": "01-32-50", "total_tracks":"12"}, 'artists':[{"name":"artist name"}], "track_number":"10","name":" track name", "genre":"pop", "lyrics":{"service":"musixmatch"}})
-        self.global_start()
+        #self.dispaly_infos_wnd({'album':{"name":"album name", "release_date": "01-32-50", "total_tracks":"12"}, 'artists':[{"name":"artist name"}], "track_number":"10","name":" track name", "genre":"pop", "lyrics":{"service":"musixmatch"}})
+        #self.return_url()
+        
+        self.tagger = Tagger.Tagger(self.params) 
 
-    def reset(self):
+        self.global_start_wnd()
+        
+
+
+    """ Start of GUI """
+    def reset_gui(self):
         '''Reset the list of participants'''
         for child in self.winfo_children():
             child.destroy()
 
+    def warn(self, message) :
+        if not self.full_auto :
+            messagebox.showwarning('Warning', message)
+            
     def ask(self,message) :
         if self.full_auto :
             return False 
         else :
-            return messagebox.askyesno('Warning',message)
+            return messagebox.askyesno('Verification',message)
 
-    def global_start(self):
+    def global_start_wnd(self):
+        self.reset_gui()
         self.desc = tk.Label(self, text="Select a mode\n")
         self.desc.grid(row=0,columnspan=4)
         self.mode_bt = []
@@ -41,41 +133,77 @@ class Application(tk.Frame):
             self.mode_bt.append(tk.Button(self, text= mode_names[i], command= lambda x=i: self.mode_selection(x)))
             self.mode_bt[i].grid(row=1, column=i)
     
-    def mode_selection(self, mode_nb):
-        if mode_nb == 0 :
-            self.auto_disp()
-        elif mode_nb == 1 :
-            self.title = "Exit Music (For A Film)"
-            self.artist = "Radiohead"
+    #window before download
+    def get_URL_wnd(self):
+        self.reset_gui()
+        self.playlist = tk.BooleanVar()
+        self.playlist_cb = tk.Checkbutton(self, text='Whole playlist ?',var= self.playlist)
+        self.playlist_cb.grid(row = 0)
+        self.input_url = tk.Entry(self,width=60)
+        self.input_url.grid(row = 1)
+        self.input_url.focus()
+        self.download_bt = tk.Button(self, text= "Download", command= self.return_url)
+        self.download_bt.grid(row = 2)
 
-            self.prep_search()
-        elif mode_nb == 2 : 
-            self.get_URL()
+    # window during download
+    def dl_wnd(self, no_playlist) :
+        print("starting window")
+
+        self.reset_gui()
+        self.title_lb = tk.Label(self,text=" Downloading screen")
+        self.title_lb.grid(row=1)
+        self.status_lb = tk.Label(self, text="State : Starting download")
+        self.status_lb.grid(row=5)
+
+        if not no_playlist :
+            self.playlist_lb = tk.Label(self, text="Playlist : TBD")
+            self.playlist_lb.grid(row=3)
+            self.current_file_lb = tk.Label(self, text="Current file : TBD")
+            self.current_file_lb.grid(row= 4)
+            return self.dl_wp
+            while self.dl_not_ended :
+                self.dl_wp() # used to update page in real time but doesn't work
+                #TODO Patch bug !
+
         else :
-            self.deprecated()
+            self.current_file_lb = tk.Label(self, text="Current file : TBD")
+            self.current_file_lb.grid(row= 3)
+            return self.dl_wop
+            while self.dl_not_ended :
+                self.dl_wop()
 
-    def prep_search(self) :
-        self.reset()
-        self.actual_file  = tk.Label(self, text="file : "+self.filename)
+
+    def dl_wp(self) :
+        self.playlist_lb.config(text="Playlist : " + self.playlist_title)
+        self.current_file_lb.config(text="Current file : " + self.current_dl)
+        self.status_lb.config(text="State : " + self.status)
+
+    def dl_wop(self) :
+        self.current_file_lb.config(text="Current file : " + self.current_dl)
+        self.status_lb.config(text="State : " + self.status)
+
+    def prep_search_wnd(self, artist, title) :
+        self.reset_gui()
+        self.actual_file  = tk.Label(self, text="file : "+self.current_file_name)
         self.actual_file.grid(columnspan=2)
 
         self.title_lb = tk.Label(self, text="title : ")
         self.title_lb.grid(row=1)
         self.title_ent = tk.Entry(self, width = 30)
-        self.title_ent.insert(0,self.title)
+        self.title_ent.insert(0, title)
         self.title_ent.grid(row=1,column=1)
     
         self.artist_lb = tk.Label(self, text="artist : ")
         self.artist_lb.grid(row=2)
         self.artist_ent = tk.Entry(self, width = 30)
-        self.artist_ent.insert(0,self.artist)
+        self.artist_ent.insert(0, artist)
         self.artist_ent.grid(row=2,column=1)
 
         self.go_bt = tk.Button(self, text="Go!",command=lambda: self.make_search())
         self.go_bt.grid(row=3,columnspan=2)
     
-    def dispaly_infos(self,track) :
-        self.reset()
+    def dispaly_infos_wnd(self,track) :
+        self.reset_gui()
         self.actual_file  = tk.Label(self, text="file : "+self.filename+"\n")
         self.actual_file.grid(columnspan=3)
 
@@ -95,7 +223,7 @@ class Application(tk.Frame):
         ls = [("album",track['album']['name']),
               ("Genre", track['genre']),
               ("release date", track['album']['release_date']),
-              ("Track number", track['track_number']+" out of "+track['album']['total_tracks'])]
+              ("Track number", str(track['track_number'])+" out of "+str(track['album']['total_tracks']))]
 
         lyrics = track['lyrics']['service']
         if lyrics != "ignored" :
@@ -123,7 +251,7 @@ class Application(tk.Frame):
         self.t_and_a_lb.grid(row=2,columnspan=3)
 
         #album artwork
-        imagedata = Image.open("image.png")
+        imagedata = Image.open(self.current_image_name)
         imagedata = imagedata.resize((row_nb*39,row_nb*39), Image.ANTIALIAS)
         self.imagedata =  ImageTk.PhotoImage(imagedata)
         self.artwork = tk.Label(self, image=self.imagedata,relief=tab_relief)
@@ -137,75 +265,24 @@ class Application(tk.Frame):
         self.button = tk.Button(self, text= "retry", command=lambda: self.retry())
         self.button.grid(row=4+row_nb, column=1)
 
-        self.button = tk.Button(self, text= "ok", command=lambda: self.update_file())
+        self.button = tk.Button(self, text= "ok", command=lambda: self.update_file(track))
         self.button.grid(row=4+row_nb, column=2)
 
-    def make_search(self):
+    def ending_wnd(self) : 
+        self.reset_gui()
+        label = tk.Label(self, text="All done !")
+        label.grid(columnspan=2)
+        label = tk.Label(self, text="{} files treated out of {} total".format(self.total_file_nb, self.treated_file_nb))
+        label.grid(row=2,columnspan=2)
+
+        button = tk.Button(self, text= "End", command=lambda: self.end_all())
+        button.grid(row=3,pady=15, column=0)
         
-        self.title = self.title_ent.get()
-        self.artist = self.artist_ent.get()
-        # spotify search TODO
-        track = {'album':{"name":"OK Computer", "release_date": "1997-05-28", "total_tracks":"12"}, 'artists':[{"name":self.artist}], "track_number":"4","name":self.title, "genre":"alternative rock", "lyrics":{"service":"musixmatch"}}
-        self.dispaly_infos(track) 
-         
-    def manual_tagging(self):
-        print("manual tagging not yet implemented")
-        self.skip()
+        button = tk.Button(self, text= "Go again", command=lambda: self.reset_all())
+        button.grid(row=3, column=1)
 
-    def skip(self) :
-        
-        if self.ask("fill manually ?") :
-            self.manual_tagging()
-        else :
-            #TODO skipping
-            self.prep_search()  
-
-    def retry(self) : 
-        #TODO add info msg ?
-        self.prep_search()  
-
-    def update_file(self) : 
-        #TODO update 
-        print("file correctly proccessed")
-        self.prep_search()
-
-    def get_URL(self):
-        self.reset()
-        self.playlist = tk.BooleanVar()
-        self.playlist_cb = tk.Checkbutton(self, text='Whole playlist ?',var= self.playlist)
-        self.playlist_cb.grid(row = 0)
-        self.input_url = tk.Entry(self,width=60)
-        self.input_url.grid(row = 1)
-        self.input_url.focus()
-        self.download_bt = tk.Button(self, text= "Download", command= self.return_url)
-        self.download_bt.grid(row = 2)
-
-    def return_url(self) :
-
-        url=self.input_url.get()
-        no_playlist = not self.playlist.get()
-        self.reset()
-        self.label = tk.Label(self, text="")
-        self.label.grid(row=1)
-        self.current_file = tk.Label(self, text="")
-        self.current_file.grid(row= 2)
-        dl_music(url,no_playlist,self.dl_logger(self),[self.dl_hook])
-        self.dl_window_state("All done !")
-        time.sleep(0.5)
-        self.scan_folder()
-
-    def dl_window_playlist(self, playlist_title) :
-        self.playlist_title = tk.Label(self, text="playlist : "+playlist_title).grid()
-
-    def dl_window_video_info(self, txt) :
-        print(txt)
-        self.label.config(text=txt)
-
-    def dl_window_state(self, txt):
-        print("STATE : " + txt)
-        self.current_file.config(text=txt)
-
-    """For youtube-dl infos """
+    
+    """ For youtube-dl infos """
     class dl_logger(object):
         def __init__(self, app):
             self.app = app
@@ -213,16 +290,15 @@ class Application(tk.Frame):
             self.playlist_title = ""
 
         def debug(self,msg):
-            print(msg)
+            #print(msg)
             if "[download] Downloading playlist" in msg:
-                playlist_title = msg.replace("[download] Downloading playlist: ","").strip()#"playlist: playlist_name"
-                self.app.dl_window_playlist(playlist_title)
+                self.app.playlist_title = msg.replace("[download] Downloading playlist: ","").strip()#"playlist: playlist_name"
                 
             elif "[download] Downloading" in msg :
                 self.video_nb = msg.replace("[download] Downloading ","")+" :" #"video 1 of 12 :""
             elif "[download] Destination:" in msg:
                 self.video_title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))
-                self.app.dl_window_video_info("%s %s"%(self.video_nb, self.video_title))
+                self.app.current_dl = "%s %s"%(self.video_nb, self.video_title)
 
         def warning(self,msg):
             pass
@@ -232,8 +308,300 @@ class Application(tk.Frame):
 
     def dl_hook(self, d) : 
         if d['status'] == 'finished':
-            self.dl_window_state("Done downloading, now converting")
+            self.status = "Done downloading, now converting"
+    
+    def temp(self,url, no_playlist) :
+        print("starting dl")
+        dls.dl_music(url,no_playlist,self.logger,[self.dl_hook])
+        self.status = "All done !"
+        time.sleep(0.03)
+        self.dl_not_ended = False
+
+
+    """ Actual prog """ 
+      
+    def mode_selection(self, mode_nb):
+        if mode_nb == 0 :
+            self.auto_disp()
+        elif mode_nb == 1 :
+            self.params['all_Auto'] = False
+            self.params['Assume_mep_is_right'] = True
+            self.params['Open_image_auto'] = False
+            self.scan_folder()
+        elif mode_nb == 2 : 
+            self.get_URL_wnd()
+        else :
+            self.deprecated()
+         
+    def manual_tagging(self):
+        self.warn("manual tagging not yet implemented")
+        self.skip()
+
+    def retry(self) : 
+        #TODO add info msg ?
+        self.prep_search_wnd()  
+
+    def return_url(self) :
+        # getting info
+        url=self.input_url.get()
+        no_playlist = not self.playlist.get()
+        
+        """ Testing multithreading to fix issue (not working when tested)
+        url = "https://www.youtube.com/watch?v=49FB9hhoO6c"
+        no_playlist = True
+
+        #Starting DL (working but window is lagging )
+        self.dl_not_ended = True
+        self.playlist_title = ""
+        self.current_file = ""
+        self.status = "Downloading"
+
+        p1 = Process(target=self.dl_wnd(no_playlist))
+        p1.start()
+        p2 = Process(target=self.temp(url, no_playlist))
+        p2.start()
+        p1.join()
+        p2.join()"""
+        renew_window = self.dl_wnd(no_playlist)
+
+        self.temp(url, no_playlist)
+        renew_window()
+        time.sleep(1)
+        
+        # Resuming normal process
+        self.scan_folder()
+
+    
+    def scan_folder(self) :
+        # scanning folder
+        wrong_format = False
+        for temp_file_name in os.listdir():
+            _ , temp_file_extension = os.path.splitext(temp_file_name)
+
+            if temp_file_extension in self.params['accepted_extensions'] and temp_file_name not in self.ignore:
+                self.file_name.append(temp_file_name)
+                self.file_extension.append(temp_file_extension)
+                self.remaining_file_nb += 1
+
+            elif (temp_file_extension in self.not_supported_extension):
+                wrong_format = True
+                wrong_file_name = temp_file_name
+
+        # saving total number
+        self.total_file_nb = self.remaining_file_nb
+
+        if wrong_format:
+            self.warn("file " + wrong_file_name +" format unsupported")
+            time.sleep(4)
+            state = 10
+
+        elif self.total_file_nb <= 0:  # no music file was found
+            self.warn("no music file found")
+            self.ending_wnd()
+
+        else : 
+            self.scan_data()
+    
+    def scan_data(self):
+        # trying to see if there are correct tags
+        self.current_file_name = self.file_name[self.file_nb]
+        title, artist, encoded_by = self.tagger.read_tags(self.current_file_name)
+
+        if type(title) != type(None):
+            title = util.remove_feat(title) 
+        else :
+            title = ""
+        if type(artist) == type(None) or artist == "None":
+            artist = ""            
+        
+        # checks wether program already processed file (TODO delete ?)
+        if encoded_by == self.params['signature']:
+            if not self.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
+                self.move_file()  # just moving the file in correct directory 
+        
+        self.prep_search_wnd(artist, title)
+
+    def make_search(self):
+        
+        self.title = self.title_ent.get()
+        self.artist = self.artist_ent.get()
+        
+        search = "track:" + self.title.replace("'", "") + " artist:" + self.artist
+        results = self.sp.search(q= search, type = "track", limit = 2)
+        items = results['tracks']['items']
+        
+        # Can a result be found
+        if len(items) > 0:
+            if (items[0]['album']['artists'][0]['name'] == 'Various Artists') :
+                track = items[1] # index 0 was a playlist TODO maybe add better checks
+            else : 
+                track = items[0]
+
+            track['name'] = util.remove_feat(track['name'])  # in case of featuring
+            track['album']['artwork'] = track['album']['images'][0]['url']
+            track['lyrics'] = {}
+            self.get_genre(track) 
+        #TODO all_auto
+        else :
+            # trying without the artist only if user can verify
+            search = "track:" + self.title.replace("'", "")
+            results = self.sp.search(q=search, type = "track", limit = 1)
+            items = results['tracks']['items']
+            if len(items) > 0:
+                track = items[0]
+                track['name'] = util.remove_feat(track['name'])  # in case of featuring
+                track['album']['artwork'] = track['album']['images'][0]['url']
+                track['lyrics'] = {}
+                self.get_genre(track)
+            else :
+                if self.ask("No match found. Retry with different spelling ?"):
+                    self.prep_search_wnd(self.artist, self.title)
+                else :
+                    self.skip()
+        
+        #track = {'album':{"name":"OK Computer", "release_date": "1997-05-28", "total_tracks":"12"}, 'artists':[{"name":self.artist}], "track_number":"4","name":self.title, "genre":"alternative rock", "lyrics":{"service":"musixmatch"}}
+        
+    def get_genre(self, track):
+
+        # getting genre
+        results = self.sp.artist(track['artists'][0]['id'])
+        if len(results['genres']) > 0:
+            track['genre'] = results['genres'][0]
+        else:
+            track['genre'] = self.params['default_genre']
+
+        # getting label and copyright
+        if self.params['get_label']:
+            results = self.sp.album(track['album']['id'])
+            if len(results) > 0:
+                track['album']['copyright'] = results['copyrights'][0]['text']
+                track['album']['label'] = results['label']
+            else:
+                # default
+                track['album']['copyright'] = ""
+                track['album']['label'] = ""
+
+        # getting BPM
+        if self.params['get_bpm']:
+            results = self.sp.audio_analysis(track['id'])
+            if len(results) > 0:
+                track['bpm'] = int(results['track']['tempo'])
+            else:
+                track['bpm'] = 0  # default
+
+        #getting lyrics 
+        if self.params['get_lyrics']: 
+            (track['lyrics']['text'], track['lyrics']['service']) = util.get_lyrics(track['artists'][0]['name'], track['name'])
+        else :
+            track['lyrics']['service'] = "ignored"
+            track['lyrics']['text'] =  ""
+
+        # downloading image 
+        tmp = slugify(track['album']['name']+"_artwork")+".jpg"
+        self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
+        
+        self.dispaly_infos_wnd(track)
+
+    def update_file(self, track) :
+        try :
+            # making sure the file is writable :
+            os.chmod(self.current_file_name, stat.S_IRWXU)
+
+            # preparing new file name and directory path 
+            if track['track_number'] != None :
+                if track['track_number'] < 10 :
+                    new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_') 
+                else :
+                    new_file_name = str(track['track_number']) + "-" + slugify(track['name'],separator='_')
+            else :
+                new_file_name = slugify(track['name'],separator='_')
+            new_file_name = new_file_name + self.file_extension[self.file_nb]  #adding extension
+
+            # changing name of the file
+            os.path.realpath(self.current_file_name)
+            os.rename(self.current_file_name, new_file_name)
+            self.current_file_name = new_file_name  
+
+            # adding featured artist to title 
+            nb_artist = len(track['artists'])
+            if nb_artist == 2:
+                track['name'] = track['name']+" ("+self.params['prefered_feat_acronyme']+track['artists'][1]['name']+")"  # correct title
+            elif nb_artist > 2:
+                track['name'] = track['name']+" ("+self.params['prefered_feat_acronyme']+track['artists'][1]['name']+ \
+                                                " & "+track['artists'][2]['name']+")"  # correct title
             
+            # modifying the tags
+            ret = self.tagger.update_tags(self.current_file_name, self.current_image_name, track)
+            
+        except FileNotFoundError :
+            self.warn("File was moved. Skipping file")            
+            self.skip()  # skipping file          
+        except Exception as e :
+            print(e.args)
+            self.warn("File couldn't be edited. Skipping file") 
+            self.skip()  # skipping file 
+        
+        if ret > 0 :
+            self.warn("error during tagging. Skipping file")
+            self.skip()
+        else :
+            self.move_file(self.params['folder_name']+os.path.sep+util.slugify(track['artists'][0]['name'], separator=" ",lowercase=False)+os.path.sep+util.slugify(track['album']['name'], separator=" ",lowercase=False))
+            
+
+    def move_file(self, direction) :
+        try :
+            if os.path.exists(direction+os.path.sep+self.current_file_name) :
+                self.warn("file already exists in folder \nkeeping this file in main folder")
+                self.ignore.append(self.current_file_name)
+            else :
+                if not os.path.exists(direction):
+                    os.makedirs(direction) #creating folder
+
+                shutil.move(self.current_file_name, direction) # place music file in correct folder
+                if not self.params['store_image_in_file'] :
+                    if not os.path.exists(direction+os.path.sep+self.current_image_name) :
+                        shutil.move(self.current_image_name,direction) #place album cover in correct folder
+                    else :
+                        os.remove(self.current_image) #removing if already present
+
+                self.treated_file_nb += 1  # file correctly treated
+
+        except Exception as e:
+            self.warn("Unexpected error:" + sys.exc_info()[0] + "\nkeeping this file in main folder")
+            
+        if self.remaining_file_nb > 1:
+            self.file_nb += 1  # file being treated = next in the list
+            self.remaining_file_nb -= 1  # one file done
+            self.scan_data() 
+        else:
+            self.ending_wnd()  # Ending program (or restarting)
+
+    def skip(self) :
+        
+        if self.ask("Do you want to fill tags manually ?") :
+            self.manual_tagging()
+        else :
+            self.ignore.append(self.current_file_name)
+            if self.remaining_file_nb > 1:
+                self.file_nb += 1  # file being treated = next in the list
+                self.remaining_file_nb -= 1  # one file done
+                self.current_file_name = self.file_name[self.file_nb]
+                self.scan_data() 
+            else:
+                self.ending_wnd() # Ending program (or restarting)
+
+    def reset_all(self) :
+            # reseting variables
+            self.file_extension = [".mp3"]
+            self.file_name = ["music.mp3"]
+            self.file_nb = 1
+            self.remaining_file_nb = 0
+            self.total_file_nb = 0
+            self.treated_file_nb = 0
+            self.global_start_wnd()
+            
+    def end_all(self) :
+        sys.exit("")
 
     def deprecated(self) :
         pass
