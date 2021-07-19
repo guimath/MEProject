@@ -25,11 +25,11 @@ def dl_image(file_url, filename, interface):
 
             return filename
         else:
-            interface.warning("image url can't be reached", "not adding image to file")
+            interface.warn("image url can't be reached", "not adding image to file")
             return ""
 
     except:
-        interface.warning("image downloading failed", "not adding image to file")
+        interface.warn("image downloading failed", "not adding image to file")
         return ""
 
 
