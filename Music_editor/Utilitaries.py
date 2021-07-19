@@ -32,10 +32,11 @@ def update_config(config, interface):
             j_object.write(jsonString)
 
     except FileNotFoundError:
-        interface.warn("No config file found \nusing standard setup")
-
+        if interface.ask("No config file found \ncreate one ?") :
+            pass
+        
     except Exception as e :
-        interface.warn("unknown error : " + str(e) + "\nusing standard setup")
+        interface.warn("unknown error during writing to config file : \n" + str(e))
 
 
 def read_config(interface) :
