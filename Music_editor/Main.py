@@ -10,7 +10,7 @@ import stat   # to change read/write file status
 
 # GUI
 import tkinter as tk
-from tkinter import Label, messagebox
+from tkinter import Label, Widget, messagebox
 from multiprocessing import Process
 from tkinter.constants import S
 from PIL import Image, ImageTk
@@ -45,65 +45,41 @@ class Application(tk.Frame):
         self.remaining_file_nb = 0
         self.total_file_nb = 0
         self.file_nb = 1
+
         self.not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
+        self.supported_extensions = [".mp3"]  # list of all accepted extensions
+        
         self.file_extension = [".mp3"]   # will store all file extensions
         self.file_name = ["music.mp3"]   # will store all file names
         self.ignore = ["music.mp3"]
 
-        self.title = ""  # temporary string to store track title
-        self.artist = ""  # temporary string to store artist name
-
         self.no_playlist = True # for downloading
-        self.debug = debug
-        self.full_auto = False
+        self.full_auto = False # unused for now 
         self.logger = self.dl_logger(self)
         
         # Spotify api authorization Secret codes (DO NOT COPY / SHARE)
         self.sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",                                                        client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2")) 
         
-        #global (to be shared with other libraries)
-        self.params = {} 
-        self.params['add_signature'] = False # param (maybe changed in config... not sure yet)
-        self.params['debug'] = False # param (maybe changed in config... not sure yet)
-        self.params['accepted_extensions'] = {}
-        self.params['accepted_extensions'] = [".mp3"]  # list of all accepted extensions
-
-
+        
         # getting info from config file :
-        config = {}
-        try:
-            with open("config.json", mode="r") as j_object:
-                config = json.load(j_object)
+        self.params = util.read_config(self)
 
-        except FileNotFoundError:
-            self.warn("No config file found \nusing standard setup")
+        self.ADD_SIGN = False # param (maybe changed in config... not sure yet)
+        self.DEBUG = debug # param (maybe changed in config... not sure yet)
 
-        except json.JSONDecodeError as e:
-            self.warn("At line " + str(e.lineno)+ " of the config file, bad syntax (" + str(e.msg) + ")\nusing standard setup") 
-        
-        except Exception as e :
-            self.warn("unknown error : " + str(e) + "\nusing standard setup")
 
-        self.params['prefered_feat_acronyme'] = str (config.get("prefered_feat_sign", "feat."))
-        self.params['default_genre'] = str(config.get("default_genre","Other"))
-        self.params['folder_name'] = str (config.get("folder_name","music"))
-        self.params['get_label'] = bool (config.get("get_label",True))
-        self.params['get_bpm'] = bool (config.get("get_bpm",True))
-        self.params['get_lyrics'] = bool (config.get("get_lyrics",True))
-        self.params['store_image_in_file'] = bool (config.get("store_image_in_file",True))
-        
-        if self.params['add_signature'] :
-            self.params['signature'] = "MEP by GM"
+        if self.ADD_SIGN :
+            self.SIGN = "MEP by GM"
         else :
-            self.params['signature'] = "---"
+            self.SIGN = "---"
+
         #temp : 
-        self.filename = "music.mp3"
         #self.dispaly_infos_wnd({'album':{"name":"album name", "release_date": "01-32-50", "total_tracks":"12"}, 'artists':[{"name":"artist name"}], "track_number":"10","name":" track name", "genre":"pop", "lyrics":{"service":"musixmatch"}})
         #self.return_url()
         
-        self.tagger = Tagger.Tagger(self.params) 
+        self.tagger = Tagger.Tagger(self.params, self.ADD_SIGN, self.SIGN) 
 
-        self.global_start_wnd()
+        self.settings_wnd()
         
 
 
@@ -125,13 +101,52 @@ class Application(tk.Frame):
 
     def global_start_wnd(self):
         self.reset_gui()
-        self.desc = tk.Label(self, text="Select a mode\n")
-        self.desc.grid(row=0,columnspan=4)
-        self.mode_bt = []
+        desc = tk.Label(self, text="Select a mode\n")
+        desc.grid(row=0,columnspan=4)
+
         mode_names = ['full auto', 'semi auto','downloads', 'discovery']
         for i in range(0,len(mode_names)):
-            self.mode_bt.append(tk.Button(self, text= mode_names[i], command= lambda x=i: self.mode_selection(x)))
-            self.mode_bt[i].grid(row=1, column=i)
+            button = tk.Button(self, text= mode_names[i], command= lambda x=i: self.mode_selection(x))
+            button.grid(row=1, column=i)
+        
+        button = tk.Button(self, text= "settings", command= self.settings_wnd)
+        button.grid(row=2, column=i)    
+
+    def settings_wnd(self) :
+        self.reset_gui()
+        title = tk.Label(self, text= "Settings").grid(row=0)
+
+        row_nb = 2
+
+        # Checkbox
+        self.config = {}
+        self.config["get_label"] = tk.BooleanVar(value=self.params["get_label"])
+        self.config["get_bpm"] = tk.BooleanVar(value=self.params["get_bpm"])
+        self.config["get_lyrics"] = tk.BooleanVar(value=self.params["get_lyrics"])
+        self.config["store_image_in_file"] = tk.BooleanVar(value=self.params["store_image_in_file"])
+
+        lst = [["get_label", "search for the artist label"],
+               ["get_bpm","search for the bpm"],
+               ["get_lyrics","search for the lyrics (can slow the program slightly)"],
+               ["store_image_in_file","include image in file (if unchecked image will just be placed within the album folder)"]]
+            
+        for i in range(len(lst)) :
+            tk.Checkbutton(self, anchor="nw", width=70, text=lst[i][1],var= self.config[lst[i][0]]).grid(row = row_nb+i,columnspan=2)
+        
+        row_nb += i + 2
+        tk.Label(self, text="").grid(row=row_nb-1) #spacing
+        
+        # Entries
+        lst = [["folder_name", "folder name (can be a simple name or a path)"],["feat_acronym", "featuring acronym"], ["default_genre", "default genre"]]
+        
+        for i in range(len(lst)) :
+            tk.Label(self, width= 40, anchor="nw", text=" " + lst[i][1]).grid(row=row_nb+i)
+            self.config[lst[i][0]] = tk.Entry(self, width = 30)
+            self.config[lst[i][0]].insert(0, self.params[lst[i][0]])
+            self.config[lst[i][0]].grid(row=row_nb+i,column=1)
+
+        # Button
+        tk.Button(self, padx=20, text = "Ok", command= lambda : self.update_config).grid(row=row_nb+i+1, columnspan=2)
     
     #window before download
     def get_URL_wnd(self):
@@ -204,7 +219,7 @@ class Application(tk.Frame):
     
     def dispaly_infos_wnd(self,track) :
         self.reset_gui()
-        self.actual_file  = tk.Label(self, text="file : "+self.filename+"\n")
+        self.actual_file  = tk.Label(self, text="file : "+self.current_file_name+"\n")
         self.actual_file.grid(columnspan=3)
 
         #formating title
@@ -254,19 +269,22 @@ class Application(tk.Frame):
         imagedata = Image.open(self.current_image_name)
         imagedata = imagedata.resize((row_nb*39,row_nb*39), Image.ANTIALIAS)
         self.imagedata =  ImageTk.PhotoImage(imagedata)
-        self.artwork = tk.Label(self, image=self.imagedata,relief=tab_relief)
-        self.artwork.grid(row=3,rowspan= row_nb, column=2)
+        artwork = tk.Label(self, image=self.imagedata,relief=tab_relief)
+        artwork.grid(row=3,rowspan= row_nb, column=2)
 
 
         #different buttons
-        self.button = tk.Button(self, text= "skip", command=lambda: self.skip())
-        self.button.grid(row=4+row_nb,pady=15, column=0)
+        button = tk.Button(self, text= "skip", command=lambda: self.skip())
+        button.grid(row=4+row_nb,pady=15, column=0)
         
-        self.button = tk.Button(self, text= "retry", command=lambda: self.retry())
-        self.button.grid(row=4+row_nb, column=1)
+        button = tk.Button(self, text= "retry", command=lambda: self.retry())
+        button.grid(row=4+row_nb, column=1)
+        
+        button = tk.Button(self, text= "ok", command=lambda: self.update_file(track))
+        button.grid(row=4+row_nb, column=2)
 
-        self.button = tk.Button(self, text= "ok", command=lambda: self.update_file(track))
-        self.button.grid(row=4+row_nb, column=2)
+        button = tk.Button(self, text="next match", command=lambda : self.next_match())
+        button.grid(row=5, column=4)
 
     def ending_wnd(self) : 
         self.reset_gui()
@@ -319,7 +337,9 @@ class Application(tk.Frame):
 
 
     """ Actual prog """ 
-      
+    def update_config(self):
+        pass
+
     def mode_selection(self, mode_nb):
         if mode_nb == 0 :
             self.auto_disp()
@@ -378,7 +398,7 @@ class Application(tk.Frame):
         for temp_file_name in os.listdir():
             _ , temp_file_extension = os.path.splitext(temp_file_name)
 
-            if temp_file_extension in self.params['accepted_extensions'] and temp_file_name not in self.ignore:
+            if temp_file_extension in self.supported_extensions and temp_file_name not in self.ignore:
                 self.file_name.append(temp_file_name)
                 self.file_extension.append(temp_file_extension)
                 self.remaining_file_nb += 1
@@ -423,44 +443,57 @@ class Application(tk.Frame):
 
     def make_search(self):
         
-        self.title = self.title_ent.get()
-        self.artist = self.artist_ent.get()
+        title = self.title_ent.get()
+        artist = self.artist_ent.get()
         
-        search = "track:" + self.title.replace("'", "") + " artist:" + self.artist
-        results = self.sp.search(q= search, type = "track", limit = 2)
+        search = "track:" + title.replace("'", "") + " artist:" + artist
+        results = self.sp.search(q= search, type = "track", limit = 4)
         items = results['tracks']['items']
-        
+        self.nb_search = 0
         # Can a result be found
         if len(items) > 0:
-            if (items[0]['album']['artists'][0]['name'] == 'Various Artists') :
-                track = items[1] # index 0 was a playlist TODO maybe add better checks
-            else : 
-                track = items[0]
+            for i in range(len(items)) :
+                if (items[i]['album']['artists'][0]['name'] == 'Various Artists') :
+                    items.pop(i) # removing because it was a playlist TODO maybe add better checks
+                    i -= 1
+                else :
 
-            track['name'] = util.remove_feat(track['name'])  # in case of featuring
-            track['album']['artwork'] = track['album']['images'][0]['url']
-            track['lyrics'] = {}
-            self.get_genre(track) 
+                    items[i]['name'] = util.remove_feat(items[i]['name'])  # in case of featuring
+                    items[i]['album']['artwork'] = items[i]['album']['images'][0]['url']
+                    items[i]['lyrics'] = {}
+            self.all_tracks = items
+            self.get_genre(items[0]) 
         #TODO all_auto
         else :
             # trying without the artist only if user can verify
-            search = "track:" + self.title.replace("'", "")
-            results = self.sp.search(q=search, type = "track", limit = 1)
+            search = "track:" + title.replace("'", "")
+            results = self.sp.search(q=search, type = "track", limit = 5)
             items = results['tracks']['items']
             if len(items) > 0:
-                track = items[0]
-                track['name'] = util.remove_feat(track['name'])  # in case of featuring
-                track['album']['artwork'] = track['album']['images'][0]['url']
-                track['lyrics'] = {}
-                self.get_genre(track)
+                for i in range(len(items)) :
+                    items[i]['name'] = util.remove_feat(items[i]['name'])  # in case of featuring
+                    items[i]['album']['artwork'] = items[i]['album']['images'][0]['url']
+                    items[i]['lyrics'] = {}
+                self.all_tracks = items
+                self.get_genre(items[0])
+
             else :
                 if self.ask("No match found. Retry with different spelling ?"):
-                    self.prep_search_wnd(self.artist, self.title)
+                    self.prep_search_wnd(artist, title)
                 else :
                     self.skip()
         
-        #track = {'album':{"name":"OK Computer", "release_date": "1997-05-28", "total_tracks":"12"}, 'artists':[{"name":self.artist}], "track_number":"4","name":self.title, "genre":"alternative rock", "lyrics":{"service":"musixmatch"}}
-        
+    def next_match(self) :
+        os.remove(self.current_image_name)
+        self.nb_search += 1
+        if self.nb_search < len(self.all_tracks):
+            self.get_genre(self.all_tracks[self.nb_search])
+        else :
+            self.warn("no more results")
+            self.nb_search = 0
+            self.get_genre(self.all_tracks[0])
+
+    #track = {'album':{"name":"OK Computer", "release_date": "1997-05-28", "total_tracks":"12"}, 'artists':[{"name":artist}], "track_number":"4","name":title, "genre":"alternative rock", "lyrics":{"service":"musixmatch"}}
     def get_genre(self, track):
 
         # getting genre
@@ -525,9 +558,9 @@ class Application(tk.Frame):
             # adding featured artist to title 
             nb_artist = len(track['artists'])
             if nb_artist == 2:
-                track['name'] = track['name']+" ("+self.params['prefered_feat_acronyme']+track['artists'][1]['name']+")"  # correct title
+                track['name'] = track['name']+" ("+self.params['feat_acronym']+track['artists'][1]['name']+")"  # correct title
             elif nb_artist > 2:
-                track['name'] = track['name']+" ("+self.params['prefered_feat_acronyme']+track['artists'][1]['name']+ \
+                track['name'] = track['name']+" ("+self.params['feat_acronym']+track['artists'][1]['name']+ \
                                                 " & "+track['artists'][2]['name']+")"  # correct title
             
             # modifying the tags
@@ -562,7 +595,7 @@ class Application(tk.Frame):
                     if not os.path.exists(direction+os.path.sep+self.current_image_name) :
                         shutil.move(self.current_image_name,direction) #place album cover in correct folder
                     else :
-                        os.remove(self.current_image) #removing if already present
+                        os.remove(self.current_image_name) #removing if already present
 
                 self.treated_file_nb += 1  # file correctly treated
 
