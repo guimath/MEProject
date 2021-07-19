@@ -4,13 +4,13 @@ import eyed3  # to parse mp3 files
 import os
 
 class Tagger:
-    def __init__(self, params):
-        self.debug = params['debug']
-        self.store_image_in_file =  params['store_image_in_file']
-        self.add_signature = params['add_signature']
-        self.signature = params['signature']
-        self.folder = params['folder_name']
+    def __init__(self, params, ADD_SIGN, SIGN):
+        self.add_signature = ADD_SIGN
+        self.signature = SIGN
         self.state = [0,0,0,2,1,3]
+        self.store_image_in_file =  params['store_image_in_file']
+        self.folder = params['folder_name']
+        
         eyed3.log.setLevel("ERROR")  # hides errors from eyed3 package
 
     """gets specific info stored in a given music file
