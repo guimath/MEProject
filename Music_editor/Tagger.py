@@ -1,12 +1,7 @@
 # for file modification
 import os
 import eyed3  # to parse mp3 files
-import json   # to parse config file
-import shutil  # to move file
-import stat   # to change read/write file status
 import os
-
-#state 1 and 5
 
 class Tagger:
     def __init__(self, params):
