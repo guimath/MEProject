@@ -53,7 +53,6 @@ class Application(tk.Frame):
         self.file_name = ["music.mp3"]   # will store all file names
         self.ignore = ["music.mp3"]
 
-        self.no_playlist = True # for downloading
         self.full_auto = False # unused for now 
         self.logger = self.dl_logger(self)
         
@@ -79,7 +78,7 @@ class Application(tk.Frame):
         
         self.tagger = Tagger.Tagger(self.params, self.ADD_SIGN, self.SIGN) 
 
-        self.settings_wnd()
+        self.global_start_wnd()
         
 
 
@@ -109,12 +108,13 @@ class Application(tk.Frame):
             button = tk.Button(self, text= mode_names[i], command= lambda x=i: self.mode_selection(x))
             button.grid(row=1, column=i)
         
+        tk.Label(self).grid(row=2)
         button = tk.Button(self, text= "settings", command= self.settings_wnd)
-        button.grid(row=2, column=i)    
+        button.grid(row=3, column=1, columnspan=2)    
 
     def settings_wnd(self) :
         self.reset_gui()
-        title = tk.Label(self, text= "Settings").grid(row=0)
+        title = tk.Label(self, text= "Settings").grid(row=0,columnspan=2)
 
         row_nb = 2
 
@@ -146,7 +146,7 @@ class Application(tk.Frame):
             self.config[lst[i][0]].grid(row=row_nb+i,column=1)
 
         # Button
-        tk.Button(self, padx=20, text = "Ok", command= lambda : self.update_config).grid(row=row_nb+i+1, columnspan=2)
+        tk.Button(self, padx=20, text = "Save", command= self.update_config).grid(row=row_nb+i+1, columnspan=2)
     
     #window before download
     def get_URL_wnd(self):
@@ -337,9 +337,6 @@ class Application(tk.Frame):
 
 
     """ Actual prog """ 
-    def update_config(self):
-        pass
-
     def mode_selection(self, mode_nb):
         if mode_nb == 0 :
             self.auto_disp()
@@ -352,7 +349,14 @@ class Application(tk.Frame):
             self.get_URL_wnd()
         else :
             self.deprecated()
-         
+
+    def update_config(self):
+        for key in self.params.keys() :
+            self.params[key] = self.config[key].get()
+                    
+        util.update_config(self.params, self)
+        self.global_start_wnd()
+
     def manual_tagging(self):
         self.warn("manual tagging not yet implemented")
         self.skip()
@@ -435,7 +439,7 @@ class Application(tk.Frame):
             artist = ""            
         
         # checks wether program already processed file (TODO delete ?)
-        if encoded_by == self.params['signature']:
+        if encoded_by == self.SIGN:
             if not self.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
                 self.move_file()  # just moving the file in correct directory 
         
