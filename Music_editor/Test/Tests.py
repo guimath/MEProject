@@ -15,46 +15,11 @@ import string"""
 import time
 from multiprocessing import Process
 import os
-"""
-def run_cpu_tasks_in_parallel(tasks):
-    running_tasks = [Process(target=task) for task in tasks]
-    for running_task in running_tasks:
-        running_task.start()
-    for running_task in running_tasks:
-        running_task.join()
-
-def func1() : 
-    for i in range(10000000) :
-        print("----------")
-
-def func2() : 
-    for i in range(10000000) :
-        print("*********")
-
-if __name__ == '__main__' :
-    run_cpu_tasks_in_parallel([func1(),func2()])
-"""
-def func1():
-  print ('func1: starting')
-  for i in range(10000000): 
-      print("*********")
-      time.sleep(0.2)
-  print ('func1: finishing')
-
-def func2():
-  print ('func2: starting')
-  for i in range(10000000): 
-      print("--------")
-      time.sleep(0.2)
-  print ('func2: finishing')
+import logging
 
 if __name__ == '__main__':
-  """p1 = Process(target=func1)
-  p1.start()
-  p2 = Process(target=func2)
-  p2.start()
-  p1.join()
-  p2.join()"""
+    pass
+
 
 """
 title = "Morose"
