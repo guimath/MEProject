@@ -1,21 +1,21 @@
 # -*-coding:utf-8 -*
+
 import os
 import sys
 import time
 
 # for file modification
-import json   # to parse config file
 import shutil  # to move file
 import stat   # to change read/write file status
 
 # GUI
 import tkinter as tk
-from tkinter import Label, Widget, messagebox
-from multiprocessing import Process
-from tkinter.constants import S
+from tkinter import messagebox
 from PIL import Image, ImageTk
 
-
+#logging 
+import logging 
+import inspect
 
 # formating strings
 from slugify import slugify
@@ -23,11 +23,14 @@ from slugify import slugify
 # Local Libs
 import Downloads as dls
 import Utilitaries as util
-import Tagger
-import Info_search
+from Tagger import Tagger
+from Info_search import Info_search
 
 class Application(tk.Frame):
-    def __init__(self, master=None, debug=False):
+    def __init__(self, master=None):
+        #logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+
         # Window init
         super().__init__(master) 
         self.master = master
@@ -56,7 +59,6 @@ class Application(tk.Frame):
         self.params = util.read_config(self)
 
         self.ADD_SIGN = False # param (maybe changed in config... not sure yet)
-        self.DEBUG = debug # param (maybe changed in config... not sure yet)
 
         if self.ADD_SIGN :
             self.SIGN = "MEP by GM"
@@ -67,8 +69,8 @@ class Application(tk.Frame):
         #self.dispaly_infos_wnd({'album':{"name":"album name", "release_date": "01-32-50", "total_tracks":"12"}, 'artists':[{"name":"artist name"}], "track_number":"10","name":" track name", "genre":"pop", "lyrics":{"service":"musixmatch"}})
         #self.return_url()
         
-        self.web = Info_search.Info_search(self.params) 
-        self.tagger = Tagger.Tagger(self.params, self.ADD_SIGN, self.SIGN) 
+        self.web = Info_search(self.params) 
+        self.tagger = Tagger(self.params, self.ADD_SIGN, self.SIGN) 
 
         self.global_start_wnd()
         
@@ -92,8 +94,8 @@ class Application(tk.Frame):
 
     def global_start_wnd(self):
         self.reset_gui()
-        desc = tk.Label(self, text="Select a mode\n")
-        desc.grid(row=0,columnspan=4)
+        #TODO Re do 
+        tk.Label(self, text="Select a mode\n").grid(row=0,columnspan=4)
 
         mode_names = ['full auto', 'semi auto','downloads', 'discovery']
         for i in range(0,len(mode_names)):
@@ -140,71 +142,56 @@ class Application(tk.Frame):
     #window before download
     def get_URL_wnd(self):
         self.reset_gui()
+
         self.playlist = tk.BooleanVar()
-        self.playlist_cb = tk.Checkbutton(self, text='Whole playlist ?',var= self.playlist)
-        self.playlist_cb.grid(row = 0)
+        tk.Checkbutton(self, text='Whole playlist ?',var= self.playlist).grid(row = 0)
+        
         self.input_url = tk.Entry(self,width=60)
         self.input_url.grid(row = 1)
         self.input_url.focus()
-        self.download_bt = tk.Button(self, text= "Download", command= self.return_url)
-        self.download_bt.grid(row = 2)
+        
+        tk.Button(self, text= "Download", command= self.download).grid(row = 2)
 
     # window during download
     def dl_wnd(self, no_playlist) :
-        print("starting window")
-
+        logging.debug("starting window")
         self.reset_gui()
-        self.title_lb = tk.Label(self,text=" Downloading screen")
-        self.title_lb.grid(row=1)
-        self.status_lb = tk.Label(self, text="State : Starting download")
-        self.status_lb.grid(row=5)
 
-        if not no_playlist :
-            self.playlist_lb = tk.Label(self, text="Playlist : TBD")
-            self.playlist_lb.grid(row=3)
-            self.current_file_lb = tk.Label(self, text="Current file : TBD")
-            self.current_file_lb.grid(row= 4)
-            return self.dl_wp
-            while self.dl_not_ended :
-                self.dl_wp() # used to update page in real time but doesn't work
-                #TODO Patch bug !
+        # create variables that will change during download
+        self.dl_status = tk.StringVar(value="State : Starting download")  
+        self.current_dl_name = tk.StringVar(value="Current file : TBD")
+        self.playlist_name = tk.StringVar(value="Playlist : TBD")
+
+        # Common to both 
+        tk.Label(self,text=" Downloading screen").grid(row=1)
+        tk.Label(self, textvariable=self.dl_status).grid(row=5)
+
+        #specific
+        if no_playlist :
+            tk.Label(self, textvariable=self.current_dl_name).grid(row= 3)
 
         else :
-            self.current_file_lb = tk.Label(self, text="Current file : TBD")
-            self.current_file_lb.grid(row= 3)
-            return self.dl_wop
-            while self.dl_not_ended :
-                self.dl_wop()
-
-
-    def dl_wp(self) :
-        self.playlist_lb.config(text="Playlist : " + self.playlist_title)
-        self.current_file_lb.config(text="Current file : " + self.current_dl)
-        self.status_lb.config(text="State : " + self.status)
-
-    def dl_wop(self) :
-        self.current_file_lb.config(text="Current file : " + self.current_dl)
-        self.status_lb.config(text="State : " + self.status)
+            tk.Label(self, textvariable=self.playlist_name).grid(row=3)
+            tk.Label(self, textvariable=self.current_dl_name).grid(row= 4)
 
     def prep_search_wnd(self, artist, title) :
         self.reset_gui()
-        self.actual_file  = tk.Label(self, text="file : "+self.current_file_name)
-        self.actual_file.grid(columnspan=2)
+        tk.Label(self, text="file : "+self.current_file_name).grid(columnspan=2)
 
-        self.title_lb = tk.Label(self, text="title : ")
-        self.title_lb.grid(row=1)
+        tk.Label(self, text="title : ").grid(row=1)
+        tk.Label(self, text="artist : ").grid(row=2)
+
+
         self.title_ent = tk.Entry(self, width = 30)
         self.title_ent.insert(0, title)
         self.title_ent.grid(row=1,column=1)
     
-        self.artist_lb = tk.Label(self, text="artist : ")
-        self.artist_lb.grid(row=2)
         self.artist_ent = tk.Entry(self, width = 30)
         self.artist_ent.insert(0, artist)
         self.artist_ent.grid(row=2,column=1)
 
-        self.go_bt = tk.Button(self, text="Go!",command=lambda: self.make_search())
-        self.go_bt.grid(row=3,columnspan=2)
+        tk.Button(self, text="Go!",command=lambda: self.make_search())\
+            .grid(row=3,columnspan=2)
     
     def dispaly_infos_wnd(self,track) :
         self.reset_gui()
@@ -216,10 +203,9 @@ class Application(tk.Frame):
         lst = [("album",track['album']['name']),
               ("Genre", track['genre']),
               ("release date", track['album']['release_date']),
-              ("Track number", str(track['track_number'])+" out of "+str(track['album']['total_tracks']))]
-        lyrics = track['lyrics']['service']
-        if lyrics != "ignored" :
-            lst.append(("lyrics", lyrics))
+              ("Track number", str(track['track_number'])+" out of "+str(track['album']['total_tracks'])),
+              ("lyrics", track['lyrics']['service'])]
+
         row_nb = len(lst)
         max_len = 0
         
@@ -250,37 +236,34 @@ class Application(tk.Frame):
         imagedata = Image.open(self.current_image_name)
         imagedata = imagedata.resize((row_nb*39,row_nb*39), Image.ANTIALIAS)
         self.imagedata =  ImageTk.PhotoImage(imagedata)
-        artwork = tk.Label(self, image=self.imagedata,relief=tab_relief)
-        artwork.grid(row=3,rowspan= row_nb, column=2)
+        tk.Label(self, image=self.imagedata,relief=tab_relief)\
+            .grid(row=3,rowspan= row_nb, column=2)
 
         #different buttons
-        button = tk.Button(self, text= "skip", command=lambda: self.skip())
-        button.grid(row=4+row_nb,pady=15, column=0)
+        tk.Button(self, text= "skip", command=lambda: self.skip())\
+            .grid(row=4+row_nb, column=0, pady=15)
         
-        button = tk.Button(self, text= "retry", command=lambda: self.retry())
-        button.grid(row=4+row_nb, column=1)
+        tk.Button(self, text= "retry", command=lambda: self.retry())\
+            .grid(row=4+row_nb, column=1)
         
-        button = tk.Button(self, text= "ok", command=lambda: self.update_file(track))
-        button.grid(row=4+row_nb, column=2)
+        tk.Button(self, text= "ok", command=lambda: self.update_file(track))\
+            .grid(row=4+row_nb, column=2)
 
-        
         button = tk.Button(self, text="next match\n(%d left)"%(self.total_info_nb-self.current_info_nb-1), command=lambda : self.next_match())
         button.grid(row=5, column=4)
+
         if self.total_info_nb == 1:
             button['state'] = "disabled"
 
     def ending_wnd(self) : 
         self.reset_gui()
-        label = tk.Label(self, text="All done !")
-        label.grid(columnspan=2)
-        label = tk.Label(self, text="{} files treated out of {} total".format(self.total_file_nb, self.treated_file_nb))
-        label.grid(row=2,columnspan=2)
 
-        button = tk.Button(self, text= "End", command=lambda: self.end_all())
-        button.grid(row=3,pady=15, column=0)
-        
-        button = tk.Button(self, text= "Go again", command=lambda: self.reset_all())
-        button.grid(row=3, column=1)
+        tk.Label(self, text="All done !").grid(columnspan=2)
+        tk.Label(self, text="{} files treated out of {} total".format(self.total_file_nb, self.treated_file_nb))\
+            .grid(row=2,columnspan=2)
+
+        tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
+        tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
 
     
     """ For youtube-dl infos """
@@ -291,15 +274,15 @@ class Application(tk.Frame):
             self.playlist_title = ""
 
         def debug(self,msg):
-            #print(msg)
+            logging.debug(msg)
             if "[download] Downloading playlist" in msg:
-                self.app.playlist_title = msg.replace("[download] Downloading playlist: ","").strip()#"playlist: playlist_name"
+                self.app.playlist_name.set("playlist : " + ("[download] Downloading playlist: ","").strip())#"playlist: playlist_name"
                 
             elif "[download] Downloading" in msg :
                 self.video_nb = msg.replace("[download] Downloading ","")+" :" #"video 1 of 12 :""
             elif "[download] Destination:" in msg:
                 self.video_title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))
-                self.app.current_dl = "%s %s"%(self.video_nb, self.video_title)
+                self.app.current_dl_name.set("Current file : %s %s"%(self.video_nb, self.video_title))
 
         def warning(self,msg):
             pass
@@ -309,18 +292,19 @@ class Application(tk.Frame):
 
     def dl_hook(self, d) : 
         if d['status'] == 'finished':
-            self.status = "Done downloading, now converting"
+            self.dl_status.set("Status : Done downloading, now converting")
     
     def temp(self,url, no_playlist) :
-        print("starting dl")
+        logging.debug("starting dl")
         dls.dl_music(url,no_playlist,self.logger,[self.dl_hook])
-        self.status = "All done !"
+        self.dl_status.set("Status : Done downloading, now converting")
         time.sleep(0.03)
-        self.dl_not_ended = False
 
 
     """ Actual prog """ 
     def mode_selection(self, mode_nb):
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+
         if mode_nb == 0 :
             self.auto_disp()
         elif mode_nb == 1 :
@@ -334,6 +318,7 @@ class Application(tk.Frame):
             self.deprecated()
 
     def update_config(self):
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         for key in self.params.keys() :
             self.params[key] = self.config[key].get()
                     
@@ -347,7 +332,8 @@ class Application(tk.Frame):
     def retry(self) : 
         self.prep_search_wnd(self.a_t[0], self.a_t[1])
 
-    def return_url(self) :
+    def download(self) :
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         # getting info
         url=self.input_url.get()
         no_playlist = not self.playlist.get()
@@ -357,7 +343,6 @@ class Application(tk.Frame):
         no_playlist = True
 
         #Starting DL (working but window is lagging )
-        self.dl_not_ended = True
         self.playlist_title = ""
         self.current_file = ""
         self.status = "Downloading"
@@ -368,17 +353,16 @@ class Application(tk.Frame):
         p2.start()
         p1.join()
         p2.join()"""
-        renew_window = self.dl_wnd(no_playlist)
+        self.dl_wnd(no_playlist) # making window
 
-        self.temp(url, no_playlist)
-        renew_window()
-        time.sleep(1)
+        self.after(1000,self.temp(url, no_playlist)) # starting dl file
         
         # Resuming normal process
         self.scan_folder()
 
     
     def scan_folder(self) :
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         # scanning folder
         wrong_format = False
         for temp_file_name in os.listdir():
@@ -409,6 +393,7 @@ class Application(tk.Frame):
             self.scan_data()
     
     def scan_data(self):
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         # trying to see if there are correct tags
         self.current_file_name = self.file_name[self.file_nb]
         title, artist, encoded_by = self.tagger.read_tags(self.current_file_name)
@@ -428,6 +413,7 @@ class Application(tk.Frame):
         self.prep_search_wnd(artist, title)
 
     def make_search(self):
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         #read entries
         title = self.title_ent.get()
         artist = self.artist_ent.get()
@@ -460,6 +446,7 @@ class Application(tk.Frame):
 
     #track = {'album':{"name":"OK Computer", "release_date": "1997-05-28", "total_tracks":"12"}, 'artists':[{"name":artist}], "track_number":"4","name":title, "genre":"alternative rock", "lyrics":{"service":"musixmatch"}}
     def prepare_display(self, track):
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         track = self.web.get_advanced_info(track)
 
         # downloading image 
@@ -469,6 +456,7 @@ class Application(tk.Frame):
         self.dispaly_infos_wnd(track)
 
     def update_file(self, track) :
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         try :
             # making sure the file is writable :
             os.chmod(self.current_file_name, stat.S_IRWXU)
@@ -511,10 +499,11 @@ class Application(tk.Frame):
             self.warn("error during tagging. Skipping file")
             self.skip()
         else :
-            self.move_file(self.params['folder_name']+os.path.sep+util.slugify(track['artists'][0]['name'], separator=" ",lowercase=False)+os.path.sep+util.slugify(track['album']['name'], separator=" ",lowercase=False))
+            self.move_file(self.params['folder_name']+os.path.sep+slugify(track['artists'][0]['name'], separator=" ",lowercase=False)+os.path.sep+slugify(track['album']['name'], separator=" ",lowercase=False))
             
 
     def move_file(self, direction) :
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         try :
             if os.path.exists(direction+os.path.sep+self.current_file_name) :
                 self.warn("file already exists in folder \nkeeping this file in main folder")
@@ -573,8 +562,9 @@ class Application(tk.Frame):
         pass
 
 if __name__ == '__main__':
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
     root = tk.Tk()
-    app = Application(master=root,debug=True)
+    app = Application(master=root)
     app.mainloop()
 
 
