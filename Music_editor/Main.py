@@ -15,9 +15,7 @@ from multiprocessing import Process
 from tkinter.constants import S
 from PIL import Image, ImageTk
 
-# for spotify api
-import spotipy  # Spotify API
-from spotipy.oauth2 import SpotifyClientCredentials
+
 
 # formating strings
 from slugify import slugify
@@ -26,9 +24,7 @@ from slugify import slugify
 import Downloads as dls
 import Utilitaries as util
 import Tagger
-
-
-
+import Info_search
 
 class Application(tk.Frame):
     def __init__(self, master=None, debug=False):
@@ -54,18 +50,13 @@ class Application(tk.Frame):
         self.ignore = ["music.mp3"]
 
         self.full_auto = False # unused for now 
-        self.logger = self.dl_logger(self)
-        
-        # Spotify api authorization Secret codes (DO NOT COPY / SHARE)
-        self.sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",                                                        client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2")) 
-        
+        self.logger = self.dl_logger(self)        
         
         # getting info from config file :
         self.params = util.read_config(self)
 
         self.ADD_SIGN = False # param (maybe changed in config... not sure yet)
         self.DEBUG = debug # param (maybe changed in config... not sure yet)
-
 
         if self.ADD_SIGN :
             self.SIGN = "MEP by GM"
@@ -76,6 +67,7 @@ class Application(tk.Frame):
         #self.dispaly_infos_wnd({'album':{"name":"album name", "release_date": "01-32-50", "total_tracks":"12"}, 'artists':[{"name":"artist name"}], "track_number":"10","name":" track name", "genre":"pop", "lyrics":{"service":"musixmatch"}})
         #self.return_url()
         
+        self.web = Info_search.Info_search(self.params) 
         self.tagger = Tagger.Tagger(self.params, self.ADD_SIGN, self.SIGN) 
 
         self.global_start_wnd()
@@ -114,31 +106,28 @@ class Application(tk.Frame):
 
     def settings_wnd(self) :
         self.reset_gui()
-        title = tk.Label(self, text= "Settings").grid(row=0,columnspan=2)
-
+        tk.Label(self, text= "Settings").grid(row=0,columnspan=2)
         row_nb = 2
 
         # Checkbox
+        lst = ["get_label", "get_bpm","get_lyrics", "store_image_in_file"]
         self.config = {}
-        self.config["get_label"] = tk.BooleanVar(value=self.params["get_label"])
-        self.config["get_bpm"] = tk.BooleanVar(value=self.params["get_bpm"])
-        self.config["get_lyrics"] = tk.BooleanVar(value=self.params["get_lyrics"])
-        self.config["store_image_in_file"] = tk.BooleanVar(value=self.params["store_image_in_file"])
+        for key in lst :
+            self.config[key] = tk.BooleanVar(value=self.params[key])
 
         lst = [["get_label", "search for the artist label"],
                ["get_bpm","search for the bpm"],
                ["get_lyrics","search for the lyrics (can slow the program slightly)"],
                ["store_image_in_file","include image in file (if unchecked image will just be placed within the album folder)"]]
-            
         for i in range(len(lst)) :
             tk.Checkbutton(self, anchor="nw", width=70, text=lst[i][1],var= self.config[lst[i][0]]).grid(row = row_nb+i,columnspan=2)
         
+        # Spacing
         row_nb += i + 2
-        tk.Label(self, text="").grid(row=row_nb-1) #spacing
+        tk.Label(self, text="").grid(row=row_nb-1)
         
         # Entries
         lst = [["folder_name", "folder name (can be a simple name or a path)"],["feat_acronym", "featuring acronym"], ["default_genre", "default genre"]]
-        
         for i in range(len(lst)) :
             tk.Label(self, width= 40, anchor="nw", text=" " + lst[i][1]).grid(row=row_nb+i)
             self.config[lst[i][0]] = tk.Entry(self, width = 30)
@@ -219,59 +208,50 @@ class Application(tk.Frame):
     
     def dispaly_infos_wnd(self,track) :
         self.reset_gui()
-        self.actual_file  = tk.Label(self, text="file : "+self.current_file_name+"\n")
-        self.actual_file.grid(columnspan=3)
+        tab_relief = "solid"
 
-        #formating title
-        nb_artist = len(track['artists'])
-        if nb_artist == 1:  # no feat
-            title = "%s by %s" %(track['name'], track['artists'][0]['name'])
+        tk.Label(self, text="file : "+self.current_file_name+"\n").grid(columnspan=3)
 
-        elif nb_artist == 2:
-            title = "%s by %s featuring %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'])
-
-        else:
-            title = "%s by %s featuring %s & %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'], track['artists'][2]['name'])
-
-
-        #creating list of info to simplify display
-        ls = [("album",track['album']['name']),
+        #list to help with the rest
+        lst = [("album",track['album']['name']),
               ("Genre", track['genre']),
               ("release date", track['album']['release_date']),
               ("Track number", str(track['track_number'])+" out of "+str(track['album']['total_tracks']))]
-
         lyrics = track['lyrics']['service']
         if lyrics != "ignored" :
-            ls.append(("lyrics", lyrics))
-    
-        row_nb = len(ls)
+            lst.append(("lyrics", lyrics))
+        row_nb = len(lst)
         max_len = 0
-        tab_relief = "solid"
         
+        # Line title
         for i in range(row_nb):
-            # line title
-            self.track_infos = tk.Label(self, text=ls[i][0],anchor=tk.constants.W, relief=tab_relief, height=2, width=13)
-            self.track_infos.grid(row= i+3,column=0)
+            tk.Label(self, text=lst[i][0],anchor=tk.constants.W, relief=tab_relief, height=2, width=13).grid(row= i+3,column=0)
             #calculating max length 
-            temp_len = len(ls[i][1])
+            temp_len = len(lst[i][1])
             if temp_len > max_len :
                 max_len = temp_len
-        # info
+
+        # Line info
         for i in range(row_nb):
-            self.track_infos = tk.Label(self, text=ls[i][1],anchor=tk.constants.W, relief=tab_relief, height=2, width=max_len)
+            self.track_infos = tk.Label(self, text=lst[i][1],anchor=tk.constants.W, relief=tab_relief, height=2, width=max_len)
             self.track_infos.grid(row= i+3,column=1)
+        
+        # Table title
+        nb_artist = len(track['artists'])
+        if nb_artist == 1:  # no feat
+            title = "%s by %s" %(track['name'], track['artists'][0]['name'])
+        elif nb_artist == 2:
+            title = "%s by %s featuring %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'])
+        else:
+            title = "%s by %s featuring %s & %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'], track['artists'][2]['name'])
+        tk.Label(self, text=title, relief=tab_relief, width= 14+max_len+row_nb*5).grid(row=2,columnspan=3)
 
-        #table title
-        self.t_and_a_lb = tk.Label(self, text=title, relief=tab_relief, width= 14+max_len+row_nb*5)
-        self.t_and_a_lb.grid(row=2,columnspan=3)
-
-        #album artwork
+        # Album artwork
         imagedata = Image.open(self.current_image_name)
         imagedata = imagedata.resize((row_nb*39,row_nb*39), Image.ANTIALIAS)
         self.imagedata =  ImageTk.PhotoImage(imagedata)
         artwork = tk.Label(self, image=self.imagedata,relief=tab_relief)
         artwork.grid(row=3,rowspan= row_nb, column=2)
-
 
         #different buttons
         button = tk.Button(self, text= "skip", command=lambda: self.skip())
@@ -283,8 +263,11 @@ class Application(tk.Frame):
         button = tk.Button(self, text= "ok", command=lambda: self.update_file(track))
         button.grid(row=4+row_nb, column=2)
 
-        button = tk.Button(self, text="next match", command=lambda : self.next_match())
+        
+        button = tk.Button(self, text="next match\n(%d left)"%(self.total_info_nb-self.current_info_nb-1), command=lambda : self.next_match())
         button.grid(row=5, column=4)
+        if self.total_info_nb == 1:
+            button['state'] = "disabled"
 
     def ending_wnd(self) : 
         self.reset_gui()
@@ -362,8 +345,7 @@ class Application(tk.Frame):
         self.skip()
 
     def retry(self) : 
-        #TODO add info msg ?
-        self.prep_search_wnd()  
+        self.prep_search_wnd(self.t_a)
 
     def return_url(self) :
         # getting info
@@ -446,92 +428,39 @@ class Application(tk.Frame):
         self.prep_search_wnd(artist, title)
 
     def make_search(self):
-        
+        #read entries
         title = self.title_ent.get()
         artist = self.artist_ent.get()
+        self.t_a = (title, artist)
+
+        #Search
+        items = self.web.get_basic_info(artist, title)
         
-        search = "track:" + title.replace("'", "") + " artist:" + artist
-        results = self.sp.search(q= search, type = "track", limit = 4)
-        items = results['tracks']['items']
-        self.nb_search = 0
-        # Can a result be found
-        if len(items) > 0:
-            for i in range(len(items)) :
-                if (items[i]['album']['artists'][0]['name'] == 'Various Artists') :
-                    items.pop(i) # removing because it was a playlist TODO maybe add better checks
-                    i -= 1
-                else :
+        if items :         
+            self.all_infos = items
+            self.current_info_nb = 0
+            self.total_info_nb = len(items)
+            self.prepare_display(items[0])
 
-                    items[i]['name'] = util.remove_feat(items[i]['name'])  # in case of featuring
-                    items[i]['album']['artwork'] = items[i]['album']['images'][0]['url']
-                    items[i]['lyrics'] = {}
-            self.all_tracks = items
-            self.get_genre(items[0]) 
-        #TODO all_auto
         else :
-            # trying without the artist only if user can verify
-            search = "track:" + title.replace("'", "")
-            results = self.sp.search(q=search, type = "track", limit = 5)
-            items = results['tracks']['items']
-            if len(items) > 0:
-                for i in range(len(items)) :
-                    items[i]['name'] = util.remove_feat(items[i]['name'])  # in case of featuring
-                    items[i]['album']['artwork'] = items[i]['album']['images'][0]['url']
-                    items[i]['lyrics'] = {}
-                self.all_tracks = items
-                self.get_genre(items[0])
-
+            if self.ask("No match found. Retry with different spelling ?"):
+                self.prep_search_wnd(artist, title)
             else :
-                if self.ask("No match found. Retry with different spelling ?"):
-                    self.prep_search_wnd(artist, title)
-                else :
-                    self.skip()
+                self.skip()
         
     def next_match(self) :
         os.remove(self.current_image_name)
-        self.nb_search += 1
-        if self.nb_search < len(self.all_tracks):
-            self.get_genre(self.all_tracks[self.nb_search])
+        self.current_info_nb += 1
+        if self.current_info_nb < self.total_info_nb:
+            self.prepare_display(self.all_infos[self.current_info_nb])
         else :
             self.warn("no more results")
-            self.nb_search = 0
-            self.get_genre(self.all_tracks[0])
+            self.current_info_nb = 0
+            self.prepare_display(self.all_infos[0])
 
     #track = {'album':{"name":"OK Computer", "release_date": "1997-05-28", "total_tracks":"12"}, 'artists':[{"name":artist}], "track_number":"4","name":title, "genre":"alternative rock", "lyrics":{"service":"musixmatch"}}
-    def get_genre(self, track):
-
-        # getting genre
-        results = self.sp.artist(track['artists'][0]['id'])
-        if len(results['genres']) > 0:
-            track['genre'] = results['genres'][0]
-        else:
-            track['genre'] = self.params['default_genre']
-
-        # getting label and copyright
-        if self.params['get_label']:
-            results = self.sp.album(track['album']['id'])
-            if len(results) > 0:
-                track['album']['copyright'] = results['copyrights'][0]['text']
-                track['album']['label'] = results['label']
-            else:
-                # default
-                track['album']['copyright'] = ""
-                track['album']['label'] = ""
-
-        # getting BPM
-        if self.params['get_bpm']:
-            results = self.sp.audio_analysis(track['id'])
-            if len(results) > 0:
-                track['bpm'] = int(results['track']['tempo'])
-            else:
-                track['bpm'] = 0  # default
-
-        #getting lyrics 
-        if self.params['get_lyrics']: 
-            (track['lyrics']['text'], track['lyrics']['service']) = util.get_lyrics(track['artists'][0]['name'], track['name'])
-        else :
-            track['lyrics']['service'] = "ignored"
-            track['lyrics']['text'] =  ""
+    def prepare_display(self, track):
+        track = self.web.get_advanced_info(track)
 
         # downloading image 
         tmp = slugify(track['album']['name']+"_artwork")+".jpg"
