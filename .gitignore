@@ -29,4 +29,5 @@ MANIFEST
 # Specific to this project :
 *.mp3
 *.flac
+*.jpg
 Music_editor/config.json
