@@ -26,6 +26,7 @@ MANIFEST
 *.spec
 .cache
 
-# Specific to music files :
+# Specific to this project :
 *.mp3
 *.flac
+Music_editor/config.json
