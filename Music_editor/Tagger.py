@@ -3,6 +3,9 @@ import os
 import eyed3  # to parse mp3 files
 import os
 
+# ~ Responsible of all the writing and reading of music file tags ~ #
+#   (only supports mp3 for now)
+
 class Tagger:
     def __init__(self, params, ADD_SIGN, SIGN):
         self.add_signature = ADD_SIGN

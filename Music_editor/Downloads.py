@@ -1,11 +1,11 @@
 from __future__ import unicode_literals
 
-import youtube_dl
-import json
-import os
+import youtube_dl 
 
 import requests
 import shutil
+
+# ~ Lib responsible of all downloads (image and music) ~ #
 
 """ Downloading picture from specified url as specified filename to specified path
     @return the name of the new downloaded file if worked correctly, else returns '' """
@@ -33,7 +33,7 @@ def dl_image(file_url, filename, interface):
         return ""
 
 
-""" Downloading mp3 file from specified url
+""" Downloading mp3 file from specified urlS
 """        
 def dl_music(url,no_playlist,logger, hook):
     ydl_opts = {

@@ -11,10 +11,13 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import Utilitaries as util
 from pprint import pprint
 
+# ~ Class responsible of all web searches (tags like album, genre etc as well as lyrics) ~ #
+
 class Info_search:
     def __init__(self, params): 
         self.params =  params
-        self.MATCH_NB = 4
+        self.MATCH_NB = 4 # Number of matches that are saved during basic info search 
+
         # Spotify api authorization Secret codes (DO NOT COPY / SHARE)
         self.sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",                                                        client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2")) 
 

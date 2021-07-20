@@ -2,6 +2,8 @@
 import string 
 import json
 
+# ~ Lib with simple functions to help keep main prog clean ~ #
+
 """ Removes the "'feat." type from the title
     @return corrected title """
 def remove_feat(title):
