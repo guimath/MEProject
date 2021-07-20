@@ -1,10 +1,5 @@
 
-from slugify import slugify
 import string 
-from bs4 import BeautifulSoup  # crawler
-import requests # get web pages
-import re # get all pages corresponding 
-import codecs # to decode text
 import json
 
 """ Removes the "'feat." type from the title
