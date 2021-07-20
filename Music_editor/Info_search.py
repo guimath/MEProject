@@ -9,6 +9,7 @@ import spotipy  # Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 
 import Utilitaries as util
+from pprint import pprint
 
 class Info_search:
     def __init__(self, params): 
@@ -57,10 +58,10 @@ class Info_search:
             service = "genius"
             if lyrics == "Error1" :
                 # if no result stop
-                return "", "lyrics not found"
+                return ("", "lyrics not found")
 
         elif lyrics == "Error2" :
-            return "", "lyrics not found"
+            return ("", "lyrics not found")
 
         else :
             return lyrics, service
@@ -78,23 +79,28 @@ class Info_search:
         if items :
             return items
         else :
-            return self._spotify_search(search)
+            return self._spotify_search("track:" + title.replace("'", ""))
 
     """ Simple search (and slight modification) using the spotify api
         @return items dict or False if no match was found """
     def _spotify_search(self, search) :
         results = self.sp.search(q= search, type = "track", limit = self.MATCH_NB)
         items = results['tracks']['items']
+        to_rm = []
         if len(items) > 0:
             for i in range(len(items)) :
                 if (items[i]['album']['artists'][0]['name'] == 'Various Artists') :
-                    items.pop(i) # removing because it was a playlist TODO maybe add better checks
-                    i -= 1
+                    to_rm.append(i)
                 else :
                     items[i]['name'] = util.remove_feat(items[i]['name'])  # in case of featuring
                     items[i]['album']['artwork'] = items[i]['album']['images'][0]['url']
                     items[i]['lyrics'] = {}
                     items[i]["info_service"] = "spotify"
+            nb = 0
+            for i in to_rm :
+                items.pop(i-nb)
+                nb += 1
+
             return items
         else :
             return False
