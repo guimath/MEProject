@@ -345,7 +345,7 @@ class Application(tk.Frame):
         self.skip()
 
     def retry(self) : 
-        self.prep_search_wnd(self.t_a)
+        self.prep_search_wnd(self.a_t[0], self.a_t[1])
 
     def return_url(self) :
         # getting info
@@ -431,7 +431,7 @@ class Application(tk.Frame):
         #read entries
         title = self.title_ent.get()
         artist = self.artist_ent.get()
-        self.t_a = (title, artist)
+        self.a_t = (artist, title)
 
         #Search
         items = self.web.get_basic_info(artist, title)
