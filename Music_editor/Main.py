@@ -328,6 +328,7 @@ class Application(tk.Frame):
         self.skip()
 
     def retry(self) : 
+        util.rm_file(self.current_image_name)
         self.prep_search_wnd(self.a_t[0], self.a_t[1])
 
     def download(self) :
@@ -421,7 +422,7 @@ class Application(tk.Frame):
                 self.skip()
         
     def next_match(self) :
-        os.remove(self.current_image_name)
+        util.rm_file(self.current_image_name)
         self.current_info_nb += 1
         if self.current_info_nb < self.total_info_nb:
             self.prepare_display(self.all_infos[self.current_info_nb])
@@ -518,7 +519,8 @@ class Application(tk.Frame):
             self.ending_wnd()  # Ending program (or restarting)
 
     def skip(self) :
-        
+        util.rm_file(self.current_image_name)
+
         if self.ask("Do you want to fill tags manually ?") :
             self.manual_tagging()
         else :
