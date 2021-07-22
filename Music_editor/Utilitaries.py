@@ -1,6 +1,7 @@
 
 import string 
 import json
+import os 
 
 # ~ Lib with simple functions to help keep main prog clean ~ #
 
@@ -62,3 +63,8 @@ def read_config(interface) :
     
     return params
 
+def rm_file(file_name):
+    try :
+        os.remove(file_name)
+    except :
+        pass
