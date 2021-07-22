@@ -158,7 +158,7 @@ class Application(tk.Frame):
         self.reset_gui()
 
         # create variables that will change during download
-        self.dl_status = tk.StringVar(value="State : Starting download")  
+        self.dl_status = tk.StringVar(value="State : Starting process")  
         self.current_dl_name = tk.StringVar(value="Current file : TBD")
         self.playlist_name = tk.StringVar(value="Playlist : TBD")
 
@@ -173,6 +173,8 @@ class Application(tk.Frame):
         else :
             tk.Label(self, textvariable=self.playlist_name).grid(row=3)
             tk.Label(self, textvariable=self.current_dl_name).grid(row= 4)
+
+        self.update()
 
     def prep_search_wnd(self, artist, title) :
         self.reset_gui()
@@ -276,29 +278,25 @@ class Application(tk.Frame):
         def debug(self,msg):
             logging.debug(msg)
             if "[download] Downloading playlist" in msg:
-                self.app.playlist_name.set("playlist : " + ("[download] Downloading playlist: ","").strip())#"playlist: playlist_name"
-                
+                self.app.playlist_name.set("playlist : " + msg.replace("[download] Downloading playlist: ","").strip())#"playlist: playlist_name"
+                self.app.update()
             elif "[download] Downloading" in msg :
                 self.video_nb = msg.replace("[download] Downloading ","")+" :" #"video 1 of 12 :""
             elif "[download] Destination:" in msg:
                 self.video_title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))
                 self.app.current_dl_name.set("Current file : %s %s"%(self.video_nb, self.video_title))
+                self.app.update()
 
         def warning(self,msg):
             pass
 
         def error(self, msg) :
-            print(msg)
+            logging.error(msg)
 
     def dl_hook(self, d) : 
         if d['status'] == 'finished':
             self.dl_status.set("Status : Done downloading, now converting")
-    
-    def temp(self,url, no_playlist) :
-        logging.debug("starting dl")
-        dls.dl_music(url,no_playlist,self.logger,[self.dl_hook])
-        self.dl_status.set("Status : Done downloading, now converting")
-        time.sleep(0.03)
+            self.update()
 
 
     """ Actual prog """ 
@@ -338,24 +336,12 @@ class Application(tk.Frame):
         url=self.input_url.get()
         no_playlist = not self.playlist.get()
         
-        """ Testing multithreading to fix issue (not working when tested)
-        url = "https://www.youtube.com/watch?v=49FB9hhoO6c"
-        no_playlist = True
-
-        #Starting DL (working but window is lagging )
-        self.playlist_title = ""
-        self.current_file = ""
-        self.status = "Downloading"
-
-        p1 = Process(target=self.dl_wnd(no_playlist))
-        p1.start()
-        p2 = Process(target=self.temp(url, no_playlist))
-        p2.start()
-        p1.join()
-        p2.join()"""
         self.dl_wnd(no_playlist) # making window
 
-        self.after(1000,self.temp(url, no_playlist)) # starting dl file
+        dls.dl_music(url,no_playlist,self.logger,[self.dl_hook])# launching download
+        self.dl_status.set("Status : All done") 
+        self.update()
+        time.sleep(1)
         
         # Resuming normal process
         self.scan_folder()
