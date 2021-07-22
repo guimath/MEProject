@@ -52,7 +52,7 @@ class Application(tk.Frame):
         self.file_name = ["music.mp3"]   # will store all file names
         self.ignore = ["music.mp3"]
 
-        self.full_auto = False # unused for now 
+        self.AUTO = False # unused for now 
         self.logger = self.dl_logger(self)        
         
         # getting info from config file :
@@ -83,11 +83,11 @@ class Application(tk.Frame):
             child.destroy()
 
     def warn(self, message) :
-        if not self.full_auto :
+        if not self.AUTO :
             messagebox.showwarning('Warning', message)
             
     def ask(self,message) :
-        if self.full_auto :
+        if self.AUTO :
             return False 
         else :
             return messagebox.askyesno('Verification',message)
@@ -97,14 +97,12 @@ class Application(tk.Frame):
         #TODO Re do 
         tk.Label(self, text="Select a mode\n").grid(row=0,columnspan=4)
 
-        mode_names = ['full auto', 'semi auto','downloads', 'discovery']
+        mode_names = ['Automatically go through a\nlarge music library', 'fill music tags for a few\nfiles','download music\nfrom youtube URL']
         for i in range(0,len(mode_names)):
-            button = tk.Button(self, text= mode_names[i], command= lambda x=i: self.mode_selection(x))
-            button.grid(row=1, column=i)
+            tk.Button(self, text= mode_names[i], command= lambda x=i: self.mode_selection(x)).grid(row=1, column=i)
         
         tk.Label(self).grid(row=2)
-        button = tk.Button(self, text= "settings", command= self.settings_wnd)
-        button.grid(row=3, column=1, columnspan=2)    
+        tk.Button(self, text= "settings", command= self.settings_wnd).grid(row=3, column=1)    
 
     def settings_wnd(self) :
         self.reset_gui()
@@ -304,11 +302,10 @@ class Application(tk.Frame):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
 
         if mode_nb == 0 :
-            self.auto_disp()
+            self.warn("This mode is still a work in progress\nBugs are to be expected")
+            self.ending_wnd()
         elif mode_nb == 1 :
-            self.params['all_Auto'] = False
-            self.params['Assume_mep_is_right'] = True
-            self.params['Open_image_auto'] = False
+            self.AUTO = False
             self.scan_folder()
         elif mode_nb == 2 : 
             self.get_URL_wnd()
@@ -478,7 +475,7 @@ class Application(tk.Frame):
             self.warn("File was moved. Skipping file")            
             self.skip()  # skipping file          
         except Exception as e :
-            print(e.args)
+            logging.error(e.args)
             self.warn("File couldn't be edited. Skipping file") 
             self.skip()  # skipping file 
         
@@ -509,6 +506,7 @@ class Application(tk.Frame):
                 self.treated_file_nb += 1  # file correctly treated
 
         except Exception as e:
+            logging.error("Unexpected error:" + sys.exc_info()[0])
             self.warn("Unexpected error:" + sys.exc_info()[0] + "\nkeeping this file in main folder")
             
         if self.remaining_file_nb > 1:
@@ -547,6 +545,8 @@ class Application(tk.Frame):
         sys.exit("")
 
     def deprecated(self) :
+        self.warn("This functionality is not supported anymore")
+        self.end_all
         pass
 
 if __name__ == '__main__':
