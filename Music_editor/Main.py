@@ -258,13 +258,13 @@ class Application(tk.Frame):
         self.reset_gui()
         if self.AUTO and self.treated_file_nb < self.total_file_nb:
             self.reset_all() # if there are still files untreated
+        else :
+            tk.Label(self, text="All done !").grid(columnspan=2)
+            tk.Label(self, text="{} files treated out of {} total".format(self.treated_file_nb, self.total_file_nb))\
+                .grid(row=2,columnspan=2)
 
-        tk.Label(self, text="All done !").grid(columnspan=2)
-        tk.Label(self, text="{} files treated out of {} total".format(self.treated_file_nb, self.total_file_nb))\
-            .grid(row=2,columnspan=2)
-
-        tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
-        tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
+            tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
+            tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
 
     def waiting_wnd(self):
         self.reset_gui()
