@@ -80,9 +80,9 @@ class Info_search:
         search = "track:" + title.replace("'", "") + " artist:" + artist
         items = self._spotify_search(search)
         if items :
-            return items
+            return items, True
         else :
-            return self._spotify_search("track:" + title.replace("'", ""))
+            return self._spotify_search("track:" + title.replace("'", "")), False
 
     """ Simple search (and slight modification) using the spotify api
         @return items dict or False if no match was found """
