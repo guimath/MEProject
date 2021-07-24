@@ -1,4 +1,5 @@
 # for file modification
+import logging
 import os
 import eyed3  # to parse mp3 files
 import os
@@ -21,11 +22,11 @@ class Tagger:
     def read_tags(self, file_name) :
         _ , extension = os.path.splitext(file_name)
         if extension == ".mp3":
-            title, artist, encoded_by = self._read_mp3(file_name)
+            return self._read_mp3(file_name)
         else:
             #Extension not supported | Should never happen
-            return (None, None, None)
-        return title, artist, encoded_by
+            logging.error("extension not supported")
+            return (None, None, None, None)
 
     """updates music file tags according to track object
         @return 0 if all went well, 1 if file was moved, 2 if file was un-editable
@@ -130,5 +131,5 @@ class Tagger:
         tag = eyed3.id3.tag.Tag()
         tag.parse(fileobj=file_name)
 
-        return (tag.title, tag.artist, tag.encoded_by)
+        return (tag.title, tag.artist, tag.album, tag.encoded_by)
 
