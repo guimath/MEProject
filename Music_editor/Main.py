@@ -74,10 +74,11 @@ class Application(tk.Frame):
         self.global_start_wnd()
         
 
-
-    """ Start of GUI """
+    """ -----------------------------------------------
+        --------------- Start of GUI  -----------------
+        ----------------------------------------------- 
+    """
     def reset_gui(self):
-        '''Reset the list of participants'''
         for child in self.winfo_children():
             child.destroy()
 
@@ -91,6 +92,7 @@ class Application(tk.Frame):
         else :
             return messagebox.askyesno('Verification',message)
 
+    # Start screen (User picks a mode)
     def global_start_wnd(self):
         self.reset_gui()
         #TODO Re do 
@@ -103,6 +105,7 @@ class Application(tk.Frame):
         tk.Label(self).grid(row=2)
         tk.Button(self, text= "settings", command= self.settings_wnd).grid(row=3, column=1)    
 
+    # User can see/modify settings
     def settings_wnd(self) :
         self.reset_gui()
         tk.Label(self, text= "Settings").grid(row=0,columnspan=2)
@@ -136,7 +139,7 @@ class Application(tk.Frame):
         # Button
         tk.Button(self, padx=20, text = "Save", command= self.update_config).grid(row=row_nb+i+1, columnspan=2)
     
-    #window before download
+    # DL : user picks URL
     def get_URL_wnd(self):
         self.reset_gui()
 
@@ -149,7 +152,7 @@ class Application(tk.Frame):
         
         tk.Button(self, text= "Download", command= self.download).grid(row = 2)
 
-    # window during download
+    # DL : keeps user informed about the download process
     def dl_wnd(self, no_playlist) :
         logging.debug("starting window")
         self.reset_gui()
@@ -173,6 +176,7 @@ class Application(tk.Frame):
 
         self.update()
 
+    # NOT AUTO : user picks artist and title to make search
     def prep_search_wnd(self, artist, title) :
         self.reset_gui()
         tk.Label(self, text="file : "+self.current_file_name).grid(columnspan=2)
@@ -192,6 +196,7 @@ class Application(tk.Frame):
         tk.Button(self, text="Go!",command=lambda: self.make_search())\
             .grid(row=3,columnspan=2)
     
+    # NOT AUTO : displays infos for one track
     def dispaly_infos_wnd(self,track) :
         self.reset_gui()
         tab_relief = "solid"
@@ -254,18 +259,8 @@ class Application(tk.Frame):
         if self.total_info_nb == 1:
             button['state'] = "disabled"
 
-    def ending_wnd(self) : 
-        self.reset_gui()
-        if self.AUTO and self.treated_file_nb < self.total_file_nb:
-            self.reset_all() # if there are still files untreated
-        else :
-            tk.Label(self, text="All done !").grid(columnspan=2)
-            tk.Label(self, text="{} files treated out of {} total".format(self.treated_file_nb, self.total_file_nb))\
-                .grid(row=2,columnspan=2)
-
-            tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
-            tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
-
+    
+    # AUTO : keeps user waiting while searching infos
     def waiting_wnd(self):
         self.reset_gui()
         tk.Label(self, text="Going through your files...").grid(columnspan=2)
@@ -273,6 +268,7 @@ class Application(tk.Frame):
         self.tmp_cf = tk.StringVar(value="")
         tk.Label(self, textvariable=self.tmp_cf).grid(row = 1, column=1)
 
+    # AUTO : user checks the infos
     def verifications_wnd(self) :
         self.reset_gui()
         g_nb = len(self.a_good_file)
@@ -313,8 +309,24 @@ class Application(tk.Frame):
                     tk.Label(self, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
 
         tk.Button(self,text="Validate",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
-            
-    """ For youtube-dl infos """
+
+    # displays ending stats
+    def ending_wnd(self) : 
+        self.reset_gui()
+        if self.AUTO and self.treated_file_nb < self.total_file_nb:
+            self.reset_all() # if there are still files untreated
+        else :
+            tk.Label(self, text="All done !").grid(columnspan=2)
+            tk.Label(self, text="{} files treated out of {} total".format(self.treated_file_nb, self.total_file_nb))\
+                .grid(row=2,columnspan=2)
+
+            tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
+            tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
+        
+    """ -----------------------------------------------
+        ------ logger and hook for yt-dl  -------------
+        ----------------------------------------------- 
+    """    
     class dl_logger(object):
         def __init__(self, app):
             self.app = app
@@ -345,7 +357,10 @@ class Application(tk.Frame):
             self.update()
 
 
-    """ Actual prog """ 
+    """ -----------------------------------------------
+        --------------- actual prog  -----------------
+        ----------------------------------------------- 
+    """    
     def mode_selection(self, mode_nb):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
 
@@ -360,8 +375,6 @@ class Application(tk.Frame):
             self.scan_folder()
         elif mode_nb == 2 : 
             self.get_URL_wnd()
-        else :
-            self.deprecated()
 
     def update_config(self):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
@@ -489,6 +502,14 @@ class Application(tk.Frame):
         else :
             self.prep_next()
 
+    def prep_next(self) :
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        self.current_file_name = self.tmp_file[self.file_nb]['file_name']
+        track = self.tmp_file[self.file_nb]['info']
+        tmp = slugify(track['album']['name']+"_artwork")+".jpg"
+        self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
+        self.update_file(track)
+
     def scan_data(self):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         # trying to see if there are correct tags
@@ -541,7 +562,6 @@ class Application(tk.Frame):
             self.current_info_nb = 0
             self.prepare_display(self.all_infos[0])
 
-    #track = {'album':{"name":"OK Computer", "release_date": "1997-05-28", "total_tracks":"12"}, 'artists':[{"name":artist}], "track_number":"4","name":title, "genre":"alternative rock", "lyrics":{"service":"musixmatch"}}
     def prepare_display(self, track):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         track = self.web.get_advanced_info(track)
@@ -652,14 +672,6 @@ class Application(tk.Frame):
             else:
                 self.ending_wnd() # Ending program (or restarting)
     
-    def prep_next(self) :
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
-        self.current_file_name = self.tmp_file[self.file_nb]['file_name']
-        track = self.tmp_file[self.file_nb]['info']
-        tmp = slugify(track['album']['name']+"_artwork")+".jpg"
-        self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
-        self.update_file(track)
-
     def reset_all(self) :
             # reseting variables
             self.file_extension = [".mp3"]
@@ -677,11 +689,6 @@ class Application(tk.Frame):
             
     def end_all(self) :
         sys.exit("")
-
-    def deprecated(self) :
-        self.warn("This functionality is not supported anymore")
-        self.end_all
-        pass
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
