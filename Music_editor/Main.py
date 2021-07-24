@@ -256,6 +256,8 @@ class Application(tk.Frame):
 
     def ending_wnd(self) : 
         self.reset_gui()
+        if self.AUTO and self.treated_file_nb < self.total_file_nb:
+            self.reset_all() # if there are still files untreated
 
         tk.Label(self, text="All done !").grid(columnspan=2)
         tk.Label(self, text="{} files treated out of {} total".format(self.treated_file_nb, self.total_file_nb))\
@@ -263,6 +265,13 @@ class Application(tk.Frame):
 
         tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
         tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
+
+    def waiting_wnd(self):
+        self.reset_gui()
+        tk.Label(self, text="Going through your files...").grid(columnspan=2)
+        tk.Label(self, text="Current : ").grid(row = 1)
+        self.tmp_cf = tk.StringVar(value="")
+        tk.Label(self, textvariable=self.tmp_cf).grid(row = 1, column=1)
 
     def verifications_wnd(self) :
         self.reset_gui()
@@ -341,7 +350,6 @@ class Application(tk.Frame):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
 
         if mode_nb == 0 :
-            self.warn("This mode is still a work in progress\nBugs are to be expected")
             self.AUTO = True
             self.a_good_file = []
             self.a_maybe_file = []
@@ -412,6 +420,8 @@ class Application(tk.Frame):
             self.ending_wnd()
 
         elif self.AUTO :
+            self.current_file_name = ""
+            self.waiting_wnd()
             self.auto_process()
 
         elif wrong_format:
@@ -425,6 +435,9 @@ class Application(tk.Frame):
         # trying to see if there are correct tags
         self.current_file_name = self.file_name[self.file_nb]
         title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
+        
+        self.tmp_cf.set(self.current_file_name)
+        self.update()
 
         if type(title) != type(None):
             title = util.remove_feat(title) 
@@ -469,9 +482,12 @@ class Application(tk.Frame):
             if self.retry_bt[i].get() :
                 self.tmp_file.pop(i-nb)
                 nb +=1
-        self.remaining_file = len(self.tmp_file)
+        self.remaining_file_nb = len(self.tmp_file)
         self.file_nb = 0
-        self.prep_next()
+        if self.remaining_file_nb == 0 :
+            self.reset_all()
+        else :
+            self.prep_next()
 
     def scan_data(self):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
@@ -606,6 +622,8 @@ class Application(tk.Frame):
             logging.error(e)
             self.warn("Unexpected error:" + e + "\nkeeping this file in main folder")
             
+        logging.debug(f'{self.remaining_file_nb=}')
+
         if self.remaining_file_nb > 1:
             self.file_nb += 1  # file being treated = next in the list
             self.remaining_file_nb -= 1  # one file done
@@ -651,7 +669,11 @@ class Application(tk.Frame):
             self.total_file_nb = 0
             self.treated_file_nb = 0
             self.ignore = ""
-            self.global_start_wnd()
+            if self.AUTO : 
+                self.AUTO = False
+                self.scan_folder()
+            else :
+                self.global_start_wnd()
             
     def end_all(self) :
         sys.exit("")
