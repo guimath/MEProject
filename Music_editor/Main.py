@@ -52,7 +52,6 @@ class Application(tk.Frame):
         self.file_name = ["music.mp3"]   # will store all file names
         self.ignore = ["music.mp3"]
 
-        self.AUTO = False # unused for now 
         self.logger = self.dl_logger(self)        
         
         # getting info from config file :
@@ -259,13 +258,53 @@ class Application(tk.Frame):
         self.reset_gui()
 
         tk.Label(self, text="All done !").grid(columnspan=2)
-        tk.Label(self, text="{} files treated out of {} total".format(self.total_file_nb, self.treated_file_nb))\
+        tk.Label(self, text="{} files treated out of {} total".format(self.treated_file_nb, self.total_file_nb))\
             .grid(row=2,columnspan=2)
 
         tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
         tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
 
-    
+    def verifications_wnd(self) :
+        self.reset_gui()
+        g_nb = len(self.a_good_file)
+        m_nb = len(self.a_maybe_file)
+        n_nb = len(self.a_nothing_file)
+        tk.Label(self, text="%s file with certain match\n%s file with a potential match\n%s file with no match\n"%(g_nb,m_nb,n_nb)).grid(columnspan=7)
+        self.retry_bt = []
+        self.tmp_file = []
+
+        for i in range(g_nb):
+            self.tmp_file.append(self.a_good_file[i])
+            self.retry_bt.append(tk.BooleanVar(value=False))
+
+        for i in range(m_nb) :
+            self.tmp_file.append(self.a_maybe_file[i])
+            self.retry_bt.append(tk.BooleanVar(value=False))
+
+        for i in range(n_nb) :
+            self.tmp_file.append(self.a_nothing_file[i])
+            self.retry_bt.append(tk.BooleanVar(value=True)) 
+
+        #Column titles
+        lst = ["retry?", "origin title","origin artist","", "title", "artist", "album" ]
+        for j in range(7) :
+            if j == 3 :
+                tk.Label(self, text=" ", bg="red").grid(row=2,column=j)
+            else :
+                tk.Label(self, text=lst[j]).grid(row=2,column=j)
+
+        # Body
+        lst = ["entry_title", "entry_artist", "", "title", "artist", "album"]
+        for i in range(self.total_file_nb) :
+            tk.Checkbutton(self, variable=self.retry_bt[i]).grid(row=3+i,column=0)
+            for j in range(6):
+                if j == 2 : 
+                    tk.Label(self, text=" ", bg="red").grid(row=3+i,column=j+1)
+                else :
+                    tk.Label(self, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
+
+        tk.Button(self,text="Validate",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
+            
     """ For youtube-dl infos """
     class dl_logger(object):
         def __init__(self, app):
@@ -303,7 +342,11 @@ class Application(tk.Frame):
 
         if mode_nb == 0 :
             self.warn("This mode is still a work in progress\nBugs are to be expected")
-            self.ending_wnd()
+            self.AUTO = True
+            self.a_good_file = []
+            self.a_maybe_file = []
+            self.a_nothing_file = []
+            self.scan_folder()
         elif mode_nb == 1 :
             self.AUTO = False
             self.scan_folder()
@@ -364,23 +407,77 @@ class Application(tk.Frame):
         # saving total number
         self.total_file_nb = self.remaining_file_nb
 
-        if wrong_format:
-            self.warn("file " + wrong_file_name +" format unsupported")
-            time.sleep(4)
-            state = 10
-
-        elif self.total_file_nb <= 0:  # no music file was found
+        if self.total_file_nb <= 0:  # no music file was found
             self.warn("no music file found")
             self.ending_wnd()
 
+        elif self.AUTO :
+            self.auto_process()
+
+        elif wrong_format:
+            self.warn("file " + wrong_file_name +" format unsupported")
+            self.scan_data()
+            
         else : 
             self.scan_data()
-    
+
+    def auto_process(self) :
+        # trying to see if there are correct tags
+        self.current_file_name = self.file_name[self.file_nb]
+        title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
+
+        if type(title) != type(None):
+            title = util.remove_feat(title) 
+        else :
+            self.skip_auto()
+        if type(artist) == type(None) or artist == "None":
+            artist = ""      
+
+        # checks wether program already processed file (TODO delete ?)
+        if encoded_by == self.SIGN:
+            if not self.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
+                self.move_file(self.params['folder_name']+os.path.sep+slugify(artist, separator=" ",lowercase=False)+os.path.sep+slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory
+
+         #Search
+        items, certain = self.web.get_basic_info(artist, title)
+        
+        if items :         
+            track = items[0]
+        else :
+            self.a_nothing_file.append({"entry_title" : title, "entry_artist": artist, "title" : "", "artist":"","album":""})
+            self.next_auto()
+
+        track = self.web.get_advanced_info(track)
+        if certain :
+            self.a_good_file.append({"entry_title" : title, "entry_artist": artist, "title" : track['name'], "artist": track['artists'][0]['name'], "album":track['album']['name'],"info" : track, "file_name" : self.current_file_name})
+            self.next_auto()
+        else :
+            self.a_maybe_file.append({"entry_title" : title, "entry_artist": artist, "title" : track['name'], "artist": track['artists'][0]['name'], "album":track['album']['name'],"info" : track, "file_name" : self.current_file_name})
+            self.next_auto()
+
+    def next_auto(self):
+        if self.remaining_file_nb > 1:
+            self.file_nb += 1  # file being treated = next in the list
+            self.remaining_file_nb -= 1  # one file done
+            self.auto_process() 
+        else:
+            self.verifications_wnd() # displaying all files
+ 
+    def prep_reset(self) :
+        nb = 0
+        for i in range(self.total_file_nb) :
+            if self.retry_bt[i].get() :
+                self.tmp_file.pop(i-nb)
+                nb +=1
+        self.remaining_file = len(self.tmp_file)
+        self.file_nb = 0
+        self.prep_next()
+
     def scan_data(self):
         logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         # trying to see if there are correct tags
         self.current_file_name = self.file_name[self.file_nb]
-        title, artist, encoded_by = self.tagger.read_tags(self.current_file_name)
+        title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
 
         if type(title) != type(None):
             title = util.remove_feat(title) 
@@ -392,7 +489,7 @@ class Application(tk.Frame):
         # checks wether program already processed file (TODO delete ?)
         if encoded_by == self.SIGN:
             if not self.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
-                self.move_file()  # just moving the file in correct directory 
+                self.move_file(self.params['folder_name']+os.path.sep+slugify(artist, separator=" ",lowercase=False)+os.path.sep+slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory 
         
         self.prep_search_wnd(artist, title)
 
@@ -410,7 +507,7 @@ class Application(tk.Frame):
             self.all_infos = items
             self.current_info_nb = 0
             self.total_info_nb = len(items)
-            self.prepare_display(items[0])
+            self.prepare_display(items[0][0])
 
         else :
             if self.ask("No match found. Retry with different spelling ?"):
@@ -506,17 +603,21 @@ class Application(tk.Frame):
                 self.treated_file_nb += 1  # file correctly treated
 
         except Exception as e:
-            logging.error("Unexpected error:" + sys.exc_info()[0])
-            self.warn("Unexpected error:" + sys.exc_info()[0] + "\nkeeping this file in main folder")
+            logging.error(e)
+            self.warn("Unexpected error:" + e + "\nkeeping this file in main folder")
             
         if self.remaining_file_nb > 1:
             self.file_nb += 1  # file being treated = next in the list
             self.remaining_file_nb -= 1  # one file done
-            self.scan_data() 
+            if not self.AUTO :
+                self.scan_data()
+            else :
+                self.prep_next() 
         else:
             self.ending_wnd()  # Ending program (or restarting)
 
     def skip(self) :
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
         util.rm_file(self.current_image_name)
 
         if self.ask("Do you want to fill tags manually ?") :
@@ -526,10 +627,20 @@ class Application(tk.Frame):
             if self.remaining_file_nb > 1:
                 self.file_nb += 1  # file being treated = next in the list
                 self.remaining_file_nb -= 1  # one file done
-                self.current_file_name = self.file_name[self.file_nb]
-                self.scan_data() 
+                if not self.AUTO :
+                    self.scan_data() 
+                else :
+                    self.prep_next()
             else:
                 self.ending_wnd() # Ending program (or restarting)
+    
+    def prep_next(self) :
+        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        self.current_file_name = self.tmp_file[self.file_nb]['file_name']
+        track = self.tmp_file[self.file_nb]['info']
+        tmp = slugify(track['album']['name']+"_artwork")+".jpg"
+        self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
+        self.update_file(track)
 
     def reset_all(self) :
             # reseting variables
@@ -539,6 +650,7 @@ class Application(tk.Frame):
             self.remaining_file_nb = 0
             self.total_file_nb = 0
             self.treated_file_nb = 0
+            self.ignore = ""
             self.global_start_wnd()
             
     def end_all(self) :
