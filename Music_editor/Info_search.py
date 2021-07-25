@@ -63,6 +63,8 @@ class Info_search:
             if lyrics == "Error1" :
                 # if no result stop
                 return ("", "lyrics not found")
+            else :
+                return lyrics, service
 
         elif lyrics == "Error2" :
             return ("", "lyrics not found")
