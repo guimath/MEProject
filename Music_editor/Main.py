@@ -29,7 +29,7 @@ from Info_search import Info_search
 class Application(tk.Frame):
     def __init__(self, master=None):
         #logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.INFO)
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
 
         # Window init
         super().__init__(master) 
@@ -52,11 +52,19 @@ class Application(tk.Frame):
         self.file_name = ["music.mp3"]   # will store all file names
         self.ignore = ["music.mp3"]
 
+        self.current_file_name = ""
+        self.current_image_name = ""
+
+        self.a_good_file = []
+        self.a_maybe_file = []
+        self.a_nothing_file = []
+
         self.logger = self.dl_logger(self)        
         
         # getting info from config file :
         self.params = util.read_config(self)
 
+        self.AUTO = False
         self.ADD_SIGN = False # param (maybe changed in config... not sure yet)
 
         if self.ADD_SIGN :
@@ -154,25 +162,29 @@ class Application(tk.Frame):
 
     # DL : keeps user informed about the download process
     def dl_wnd(self, no_playlist) :
-        logging.debug("starting window")
+        logger.debug("starting window")
         self.reset_gui()
 
         # create variables that will change during download
-        self.dl_status = tk.StringVar(value="State : Starting process")  
+        self.dl_status = tk.StringVar(value="Starting process")  
         self.current_dl_name = tk.StringVar(value="Current file : TBD")
         self.playlist_name = tk.StringVar(value="Playlist : TBD")
 
         # Common to both 
-        tk.Label(self,text=" Downloading screen").grid(row=1)
-        tk.Label(self, textvariable=self.dl_status).grid(row=5)
+        tk.Label(self,text=" Downloading screen").grid(row=1, columnspan=2)
+        tk.Label(self, text="State : ").grid(row=5)
+        tk.Label(self, textvariable=self.dl_status).grid(row=5, column=1)
 
         #specific
         if no_playlist :
-            tk.Label(self, textvariable=self.current_dl_name).grid(row= 3)
+            tk.Label(self, text="Current file :").grid(row=3)
+            tk.Label(self, textvariable=self.current_dl_name).grid(row= 3, column=1)
 
         else :
-            tk.Label(self, textvariable=self.playlist_name).grid(row=3)
-            tk.Label(self, textvariable=self.current_dl_name).grid(row= 4)
+            tk.Label(self, text="Playlist : ").grid(row=3)
+            tk.Label(self, textvariable=self.playlist_name).grid(row=3, column=1)
+            tk.Label(self, text="Current file : ").grid(row=4)
+            tk.Label(self, textvariable=self.current_dl_name).grid(row= 4, column=1)
 
         self.update()
 
@@ -244,22 +256,29 @@ class Application(tk.Frame):
             .grid(row=3,rowspan= row_nb, column=2)
 
         #different buttons
-        tk.Button(self, text= "skip", command=lambda: self.skip())\
+        tk.Button(self, width=8, text= "skip", command=lambda: self.skip())\
             .grid(row=4+row_nb, column=0, pady=15)
         
-        tk.Button(self, text= "retry", command=lambda: self.retry())\
+        tk.Button(self, width=8, text= "retry", command=lambda: self.retry())\
             .grid(row=4+row_nb, column=1)
         
-        tk.Button(self, text= "ok", command=lambda: self.update_file(track))\
+        tk.Button(self, width=8, text= "ok", command=lambda: self.update_file(track))\
             .grid(row=4+row_nb, column=2)
 
-        button = tk.Button(self, text="next match\n(%d left)"%(self.total_info_nb-self.current_info_nb-1), command=lambda : self.next_match())
-        button.grid(row=5, column=4)
+        
+        self.prev_match_button = tk.Button(self, width=15, text="previous match\n(%d left)"%(self.current_info_nb), command=lambda : self.prev_match())
+        self.prev_match_button.grid(row = 4, column=4, rowspan=2)
+        self.next_match_button = tk.Button(self, width=15, text="next match\n(%d left)"%(self.total_info_nb-self.current_info_nb-1), command=lambda : self.next_match())
+        self.next_match_button.grid(row=6, column=4, rowspan=2)
 
-        if self.total_info_nb == 1:
-            button['state'] = "disabled"
+        self.update_buttons()
 
-    
+    def update_buttons(self) :
+        if self.current_info_nb == 0 :
+            self.prev_match_button['state'] = "disabled"
+        if self.current_info_nb+1 == self.total_info_nb :
+            self.next_match_button['state'] = "disabled"
+
     # AUTO : keeps user waiting while searching infos
     def waiting_wnd(self):
         self.reset_gui()
@@ -284,7 +303,7 @@ class Application(tk.Frame):
 
         for i in range(m_nb) :
             self.tmp_file.append(self.a_maybe_file[i])
-            self.retry_bt.append(tk.BooleanVar(value=False))
+            self.retry_bt.append(tk.BooleanVar(value=True))
 
         for i in range(n_nb) :
             self.tmp_file.append(self.a_nothing_file[i])
@@ -330,30 +349,31 @@ class Application(tk.Frame):
     class dl_logger(object):
         def __init__(self, app):
             self.app = app
-            self.video_nb = "video:"
+            self.video_nb = ""
             self.playlist_title = ""
 
         def debug(self,msg):
-            logging.debug(msg)
+            logger.debug(msg)
             if "[download] Downloading playlist" in msg:
-                self.app.playlist_name.set("playlist : " + msg.replace("[download] Downloading playlist: ","").strip())#"playlist: playlist_name"
+                self.app.playlist_name.set(msg.replace("[download] Downloading playlist: ","").strip())#"playlist_name"
                 self.app.update()
             elif "[download] Downloading" in msg :
-                self.video_nb = msg.replace("[download] Downloading ","")+" :" #"video 1 of 12 :""
+                self.video_nb = " " + msg.replace("[download] Downloading ","")+" :" #"video 1 of 12 :""
             elif "[download] Destination:" in msg:
                 self.video_title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))
-                self.app.current_dl_name.set("Current file : %s %s"%(self.video_nb, self.video_title))
+                self.app.current_dl_name.set("%s %s"%(self.video_nb, self.video_title))
+                self.app.dl_status.set("Downloading...")
                 self.app.update()
 
         def warning(self,msg):
             pass
 
         def error(self, msg) :
-            logging.error(msg)
+            logger.error(msg)
 
     def dl_hook(self, d) : 
         if d['status'] == 'finished':
-            self.dl_status.set("Status : Done downloading, now converting")
+            self.dl_status.set("Done downloading, now converting")
             self.update()
 
 
@@ -362,13 +382,10 @@ class Application(tk.Frame):
         ----------------------------------------------- 
     """    
     def mode_selection(self, mode_nb):
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
 
         if mode_nb == 0 :
             self.AUTO = True
-            self.a_good_file = []
-            self.a_maybe_file = []
-            self.a_nothing_file = []
             self.scan_folder()
         elif mode_nb == 1 :
             self.AUTO = False
@@ -377,7 +394,7 @@ class Application(tk.Frame):
             self.get_URL_wnd()
 
     def update_config(self):
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         for key in self.params.keys() :
             self.params[key] = self.config[key].get()
                     
@@ -393,7 +410,7 @@ class Application(tk.Frame):
         self.prep_search_wnd(self.a_t[0], self.a_t[1])
 
     def download(self) :
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         # getting info
         url=self.input_url.get()
         no_playlist = not self.playlist.get()
@@ -405,12 +422,14 @@ class Application(tk.Frame):
         self.update()
         time.sleep(1)
         
-        # Resuming normal process
-        self.scan_folder()
+        # If only one file was dl semi-auto process else full auto
+        if not no_playlist :
+            self.AUTO = True
+            self.scan_folder()
 
     
     def scan_folder(self) :
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         # scanning folder
         wrong_format = False
         for temp_file_name in os.listdir():
@@ -503,7 +522,7 @@ class Application(tk.Frame):
             self.prep_next()
 
     def prep_next(self) :
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         self.current_file_name = self.tmp_file[self.file_nb]['file_name']
         track = self.tmp_file[self.file_nb]['info']
         tmp = slugify(track['album']['name']+"_artwork")+".jpg"
@@ -511,7 +530,7 @@ class Application(tk.Frame):
         self.update_file(track)
 
     def scan_data(self):
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         # trying to see if there are correct tags
         self.current_file_name = self.file_name[self.file_nb]
         title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
@@ -531,49 +550,53 @@ class Application(tk.Frame):
         self.prep_search_wnd(artist, title)
 
     def make_search(self):
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         #read entries
         title = self.title_ent.get()
         artist = self.artist_ent.get()
         self.a_t = (artist, title)
 
         #Search
-        items = self.web.get_basic_info(artist, title)
+        items , certain = self.web.get_basic_info(artist, title)
         
         if items :         
             self.all_infos = items
             self.current_info_nb = 0
             self.total_info_nb = len(items)
-            self.prepare_display(items[0][0])
+            self.prepare_display(items[0])
 
         else :
             if self.ask("No match found. Retry with different spelling ?"):
                 self.prep_search_wnd(artist, title)
             else :
                 self.skip()
-        
+
+    def prev_match(self) :
+        self.current_info_nb -= 1
+        self.prepare_display(self.all_infos[self.current_info_nb])
+
     def next_match(self) :
-        util.rm_file(self.current_image_name)
         self.current_info_nb += 1
-        if self.current_info_nb < self.total_info_nb:
-            self.prepare_display(self.all_infos[self.current_info_nb])
-        else :
-            self.warn("no more results")
-            self.current_info_nb = 0
-            self.prepare_display(self.all_infos[0])
+        self.prepare_display(self.all_infos[self.current_info_nb])
+
 
     def prepare_display(self, track):
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
-        track = self.web.get_advanced_info(track)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
+        
+        if not track["info"]["full"] :
+            track = self.web.get_advanced_info(track)
 
         # downloading image 
         tmp = slugify(track['album']['name']+"_artwork")+".jpg"
-        self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
+        if self.current_image_name != tmp :
+            util.rm_file(self.current_image_name)
+            self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
         
         self.dispaly_infos_wnd(track)
 
+
     def update_file(self, track) :
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         try :
             # making sure the file is writable :
             os.chmod(self.current_file_name, stat.S_IRWXU)
@@ -608,7 +631,7 @@ class Application(tk.Frame):
             self.warn("File was moved. Skipping file")            
             self.skip()  # skipping file          
         except Exception as e :
-            logging.error(e.args)
+            logger.error(e.args)
             self.warn("File couldn't be edited. Skipping file") 
             self.skip()  # skipping file 
         
@@ -620,7 +643,7 @@ class Application(tk.Frame):
             
 
     def move_file(self, direction) :
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         try :
             if os.path.exists(direction+os.path.sep+self.current_file_name) :
                 self.warn("file already exists in folder \nkeeping this file in main folder")
@@ -639,10 +662,10 @@ class Application(tk.Frame):
                 self.treated_file_nb += 1  # file correctly treated
 
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
             self.warn("Unexpected error:" + e + "\nkeeping this file in main folder")
             
-        logging.debug(f'{self.remaining_file_nb=}')
+        logger.debug(f'{self.remaining_file_nb=}')
 
         if self.remaining_file_nb > 1:
             self.file_nb += 1  # file being treated = next in the list
@@ -655,22 +678,19 @@ class Application(tk.Frame):
             self.ending_wnd()  # Ending program (or restarting)
 
     def skip(self) :
-        logging.debug("in func : " + inspect.currentframe().f_code.co_name)
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         util.rm_file(self.current_image_name)
-
-        if self.ask("Do you want to fill tags manually ?") :
-            self.manual_tagging()
-        else :
-            self.ignore.append(self.current_file_name)
-            if self.remaining_file_nb > 1:
-                self.file_nb += 1  # file being treated = next in the list
-                self.remaining_file_nb -= 1  # one file done
-                if not self.AUTO :
-                    self.scan_data() 
-                else :
-                    self.prep_next()
-            else:
-                self.ending_wnd() # Ending program (or restarting)
+    
+        self.ignore.append(self.current_file_name)
+        if self.remaining_file_nb > 1:
+            self.file_nb += 1  # file being treated = next in the list
+            self.remaining_file_nb -= 1  # one file done
+            if not self.AUTO :
+                self.scan_data() 
+            else :
+                self.prep_next()
+        else:
+            self.ending_wnd() # Ending program (or restarting)
     
     def reset_all(self) :
             # reseting variables
@@ -691,7 +711,17 @@ class Application(tk.Frame):
         sys.exit("")
 
 if __name__ == '__main__':
-    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
+    #Logger 
+    log_lvl = logging.DEBUG
+    logger = logging.getLogger("MEP")
+    logger.setLevel(log_lvl)
+
+    # create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(log_lvl)
+    ch.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
+    logger.addHandler(ch)
+
     root = tk.Tk()
     app = Application(master=root)
     app.mainloop()
