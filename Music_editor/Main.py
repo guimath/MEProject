@@ -64,6 +64,13 @@ class Application(tk.Frame):
         # getting info from config file :
         self.params = util.read_config(self)
 
+        #Global params for GUI might be changed in config
+        self.FONT_NAME = "helvetica"
+        self.FONT_SIZE = "14"
+        self.FONT = self.FONT_NAME+" " + self.FONT_SIZE
+        #tk.font.Font(self, font= self.FONT, name="normal", exists=True)
+
+        #global 
         self.AUTO = False
         self.ADD_SIGN = False # param (maybe changed in config... not sure yet)
 
@@ -211,11 +218,7 @@ class Application(tk.Frame):
     # NOT AUTO : displays infos for one track
     def dispaly_infos_wnd(self,track) :
         self.reset_gui()
-        tab_relief = "solid"
-
-        tk.Label(self, text="file : "+self.current_file_name+"\n").grid(columnspan=3)
-
-        #list to help with the rest
+        #Params of the tab:
         lst = [("album",track['album']['name']),
               ("Genre", track['genre']),
               ("release date", track['album']['release_date']),
@@ -223,20 +226,26 @@ class Application(tk.Frame):
               ("lyrics", track['lyrics']['service'])]
 
         row_nb = len(lst)
-        max_len = 0
+        tab_relief = "solid"
+        desc_len = 13
+        info_len = 25
+        title_len = desc_len + info_len + row_nb*5 - 1
+
+        tk.Label(self, text="file : "+self.current_file_name+"\n").grid(columnspan=3)
+
+        #list to help with the rest
+        
+        
         
         # Line title
         for i in range(row_nb):
-            tk.Label(self, text=lst[i][0],anchor=tk.constants.W, relief=tab_relief, height=2, width=13).grid(row= i+3,column=0)
-            #calculating max length 
-            temp_len = len(lst[i][1])
-            if temp_len > max_len :
-                max_len = temp_len
+            tk.Label(self, anchor=tk.constants.W, relief=tab_relief, height=2, width=desc_len, text=lst[i][0])\
+                .grid(row= i+3,column=0)
 
         # Line info
         for i in range(row_nb):
-            self.track_infos = tk.Label(self, text=lst[i][1],anchor=tk.constants.W, relief=tab_relief, height=2, width=max_len)
-            self.track_infos.grid(row= i+3,column=1)
+            tk.Label(self, anchor=tk.constants.W, relief=tab_relief, height=2, width=info_len, wraplength=250, text=lst[i][1])\
+                .grid(row= i+3,column=1)
         
         # Table title
         nb_artist = len(track['artists'])
@@ -246,11 +255,13 @@ class Application(tk.Frame):
             title = "%s by %s featuring %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'])
         else:
             title = "%s by %s featuring %s & %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'], track['artists'][2]['name'])
-        tk.Label(self, text=title, relief=tab_relief, width= 14+max_len+row_nb*5).grid(row=2,columnspan=3)
+        
+        tk.Label(self, relief=tab_relief, width= title_len, wraplength=500, text=title)\
+            .grid(row=2,columnspan=3)
 
         # Album artwork
         imagedata = Image.open(self.current_image_name)
-        imagedata = imagedata.resize((row_nb*39,row_nb*39), Image.ANTIALIAS)
+        imagedata = imagedata.resize((row_nb*37+2,row_nb*37+2), Image.ANTIALIAS)
         self.imagedata =  ImageTk.PhotoImage(imagedata)
         tk.Label(self, image=self.imagedata,relief=tab_relief)\
             .grid(row=3,rowspan= row_nb, column=2)
