@@ -434,7 +434,8 @@ class Application(tk.Frame):
         # If only one file was dl semi-auto process else full auto
         if not no_playlist :
             self.AUTO = True
-            self.scan_folder()
+        
+        self.scan_folder()
 
     
     def scan_folder(self) :
