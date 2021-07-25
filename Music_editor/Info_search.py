@@ -31,10 +31,10 @@ class Info_search:
         @return track dict"""
     def get_advanced_info(self, track):
         #getting genre, label and bpm
-        if track["info_service"] == "spotify" :
+        if track["info"]["service"] == "spotify" :
             track = self._spotify_advanced_info(track)
         else :
-            return track # impossible
+            return False # impossible
         
         # getting lyrics
         if self.params['get_lyrics'] :
@@ -43,6 +43,7 @@ class Info_search:
             track['lyrics']['service'] = "ignored"
             track['lyrics']['text'] =  ""
 
+        track['info']['full'] = True
         return track
 
     """ gets lyrics from web 
@@ -98,12 +99,12 @@ class Info_search:
                     items[i]['name'] = util.remove_feat(items[i]['name'])  # in case of featuring
                     items[i]['album']['artwork'] = items[i]['album']['images'][0]['url']
                     items[i]['lyrics'] = {}
-                    items[i]["info_service"] = "spotify"
+                    items[i]['info'] = {'service' : 'spotify', 'full':False}
+
             nb = 0
             for i in to_rm :
                 items.pop(i-nb)
                 nb += 1
-
             return items
         else :
             return False
