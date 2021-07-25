@@ -37,6 +37,7 @@ class Application(tk.Frame):
         self.master.geometry('800x500')
         self.master.title("MEProject")
         self.grid()
+        self.AUTO = False
 
         # Var init : 
         #local : 
@@ -60,7 +61,6 @@ class Application(tk.Frame):
         self.a_nothing_file = []
 
         self.logger = self.dl_logger(self)        
-        
         # getting info from config file :
         self.params = util.read_config(self)
 
@@ -71,7 +71,6 @@ class Application(tk.Frame):
         #tk.font.Font(self, font= self.FONT, name="normal", exists=True)
 
         #global 
-        self.AUTO = False
         self.ADD_SIGN = False # param (maybe changed in config... not sure yet)
 
         if self.ADD_SIGN :
@@ -85,7 +84,6 @@ class Application(tk.Frame):
         
         self.web = Info_search(self.params) 
         self.tagger = Tagger(self.params, self.ADD_SIGN, self.SIGN) 
-
         self.global_start_wnd()
         
 
@@ -496,20 +494,21 @@ class Application(tk.Frame):
 
          #Search
         items, certain = self.web.get_basic_info(artist, title)
-        
+
         if items :         
             track = items[0]
+            track = self.web.get_advanced_info(track)
+            if certain :
+                self.a_good_file.append({"entry_title" : title, "entry_artist": artist, "title" : track['name'], "artist": track['artists'][0]['name'], "album":track['album']['name'],"info" : track, "file_name" : self.current_file_name})
+                self.next_auto()
+            else :
+                self.a_maybe_file.append({"entry_title" : title, "entry_artist": artist, "title" : track['name'], "artist": track['artists'][0]['name'], "album":track['album']['name'],"info" : track, "file_name" : self.current_file_name})
+                self.next_auto()
         else :
             self.a_nothing_file.append({"entry_title" : title, "entry_artist": artist, "title" : "", "artist":"","album":""})
             self.next_auto()
 
-        track = self.web.get_advanced_info(track)
-        if certain :
-            self.a_good_file.append({"entry_title" : title, "entry_artist": artist, "title" : track['name'], "artist": track['artists'][0]['name'], "album":track['album']['name'],"info" : track, "file_name" : self.current_file_name})
-            self.next_auto()
-        else :
-            self.a_maybe_file.append({"entry_title" : title, "entry_artist": artist, "title" : track['name'], "artist": track['artists'][0]['name'], "album":track['album']['name'],"info" : track, "file_name" : self.current_file_name})
-            self.next_auto()
+        
 
     def next_auto(self):
         if self.remaining_file_nb > 1:
@@ -671,6 +670,7 @@ class Application(tk.Frame):
                         os.remove(self.current_image_name) #removing if already present
 
                 self.treated_file_nb += 1  # file correctly treated
+                self.current_image_name = ""
 
         except Exception as e:
             logger.error(e)
