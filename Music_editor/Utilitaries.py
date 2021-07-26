@@ -8,8 +8,14 @@ import os
 """ Removes the "'feat." type from the title
     @return corrected title """
 def remove_feat(title):
-    if "(Ft" in title or "(ft" in title or "(Feat" in title or "(feat" in title:
-        title =  title[0:title.rfind('(')]
+    lst1 = ["(Ft", "(ft", "(FEAT", "(Feat", "(feat", "(with", "(With", "FEAT"]
+
+    for element in lst1 :
+        if element in title :
+            title =  title[0:title.rfind(element)]
+            return title
+    
+
 
     return title.strip()
 
