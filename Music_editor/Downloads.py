@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import os
 
 import youtube_dl 
 
@@ -50,11 +51,18 @@ def dl_music(url,no_playlist,logger, hook):
     'logger': logger,
     'progress_hooks': hook,
     }
+
+    if os.path.exists("ffmpeg") :
+        ydl_opts['ffmpeg_location'] = './ffmpeg'
+
+   
+
     try :     
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
         return True
-    except :
+    except Exception as e:
+        logger.error(e.args)
         return False
 
     
