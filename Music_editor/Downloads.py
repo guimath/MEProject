@@ -50,8 +50,11 @@ def dl_music(url,no_playlist,logger, hook):
     'logger': logger,
     'progress_hooks': hook,
     }
-        
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([url])
+    try :     
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            ydl.download([url])
+        return True
+    except :
+        return False
 
     
