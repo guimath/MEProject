@@ -162,12 +162,10 @@ class Application(tk.Frame):
         self.input_url = tk.Entry(self,width=60)
         self.input_url.grid(row = 1)
         self.input_url.focus()
-        
         tk.Button(self, text= "Download", command= self.download).grid(row = 2)
 
     # DL : keeps user informed about the download process
     def dl_wnd(self, no_playlist) :
-        logger.debug("starting window")
         self.reset_gui()
 
         # create variables that will change during download
@@ -176,8 +174,8 @@ class Application(tk.Frame):
         self.playlist_name = tk.StringVar(value="Playlist : TBD")
 
         # Common to both 
-        tk.Label(self,text=" Downloading screen").grid(row=1, columnspan=2)
-        tk.Label(self, text="State : ").grid(row=5)
+        tk.Label(self,text=" Downloading screen\n").grid(row=1, columnspan=2)
+        tk.Label(self, text="State : ", height=2).grid(row=5)
         tk.Label(self, textvariable=self.dl_status).grid(row=5, column=1)
 
         #specific
@@ -299,10 +297,26 @@ class Application(tk.Frame):
     # AUTO : user checks the infos
     def verifications_wnd(self) :
         self.reset_gui()
+        # making window scrollable :
+        def onFrameConfigure(canvas):
+            '''Reset the scroll region to encompass the inner frame'''
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        canvas = tk.Canvas(self, width=750, height=500, borderwidth=0)
+        frame = tk.Frame(canvas, width=750, height=500)
+        vsb = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+
+        vsb.grid(row=0, column=1, sticky = "ns")
+        canvas.grid(row=0, column=0)
+        canvas.create_window((4,4), window=frame, anchor="nw")
+
+        frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+
+        # preparing disp
         g_nb = len(self.a_good_file)
         m_nb = len(self.a_maybe_file)
         n_nb = len(self.a_nothing_file)
-        tk.Label(self, text="%s file with certain match\n%s file with a potential match\n%s file with no match\n"%(g_nb,m_nb,n_nb)).grid(columnspan=7)
         self.retry_bt = []
         self.tmp_file = []
 
@@ -318,25 +332,28 @@ class Application(tk.Frame):
             self.tmp_file.append(self.a_nothing_file[i])
             self.retry_bt.append(tk.BooleanVar(value=True)) 
 
+        # Main title 
+        tk.Label(frame, text="%s file with certain match\n%s file with a potential match\n%s file with no match\n"%(g_nb,m_nb,n_nb)).grid(columnspan=7)
+
         #Column titles
         lst = ["retry?", "origin title","origin artist","", "title", "artist", "album" ]
         for j in range(7) :
             if j == 3 :
-                tk.Label(self, text=" ", bg="red").grid(row=2,column=j)
+                tk.Label(frame, text=" ", bg="red").grid(row=2,column=j)
             else :
-                tk.Label(self, text=lst[j]).grid(row=2,column=j)
+                tk.Label(frame, text=lst[j]).grid(row=2,column=j)
 
         # Body
         lst = ["entry_title", "entry_artist", "", "title", "artist", "album"]
         for i in range(self.total_file_nb) :
-            tk.Checkbutton(self, variable=self.retry_bt[i]).grid(row=3+i,column=0)
+            tk.Checkbutton(frame, variable=self.retry_bt[i]).grid(row=3+i,column=0)
             for j in range(6):
                 if j == 2 : 
-                    tk.Label(self, text=" ", bg="red").grid(row=3+i,column=j+1)
+                    tk.Label(frame, text=" ", bg="red").grid(row=3+i,column=j+1)
                 else :
-                    tk.Label(self, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
+                    tk.Label(frame, wraplength=150, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
 
-        tk.Button(self,text="Validate",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
+        tk.Button(frame,text="Validate",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
 
     # displays ending stats
     def ending_wnd(self) : 
@@ -371,8 +388,13 @@ class Application(tk.Frame):
             elif "[download] Destination:" in msg:
                 self.video_title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))
                 self.app.current_dl_name.set("%s %s"%(self.video_nb, self.video_title))
-                self.app.dl_status.set("Downloading...")
+                self.app.dl_status.set("Downloading : ")
                 self.app.update()
+            elif "% of " in msg : 
+                tmp , _ = msg.replace("[download]", "").split("%")
+                self.app.dl_status.set("Downloading : "+ tmp+ "%")
+                self.app.update()
+
 
         def warning(self,msg):
             pass
@@ -382,7 +404,7 @@ class Application(tk.Frame):
 
     def dl_hook(self, d) : 
         if d['status'] == 'finished':
-            self.dl_status.set("Done downloading, now converting")
+            self.dl_status.set("Converting")
             self.update()
 
 
@@ -425,17 +447,22 @@ class Application(tk.Frame):
         no_playlist = not self.playlist.get()
         
         self.dl_wnd(no_playlist) # making window
-
-        dls.dl_music(url,no_playlist,self.logger,[self.dl_hook])# launching download
-        self.dl_status.set("Status : All done") 
-        self.update()
-        time.sleep(1)
-        
-        # If only one file was dl semi-auto process else full auto
-        if not no_playlist :
-            self.AUTO = True
-        
-        self.scan_folder()
+        success = dls.dl_music(url,no_playlist,self.logger,[self.dl_hook])
+        if not success : 
+            if self.ask("Downloading failed, retry ?") :
+                self.get_URL_wnd()
+            else : 
+                self.ending_wnd()    
+        else :
+            self.dl_status.set("All done") 
+            self.update()
+            time.sleep(1)
+            
+            # If only one file was dl semi-auto process else full auto
+            if not no_playlist :
+                self.AUTO = True
+            
+            self.scan_folder()
 
     
     def scan_folder(self) :
@@ -677,8 +704,6 @@ class Application(tk.Frame):
             logger.error(e)
             self.warn("Unexpected error:" + e + "\nkeeping this file in main folder")
             
-        logger.debug(f'{self.remaining_file_nb=}')
-
         if self.remaining_file_nb > 1:
             self.file_nb += 1  # file being treated = next in the list
             self.remaining_file_nb -= 1  # one file done
@@ -712,7 +737,7 @@ class Application(tk.Frame):
             self.remaining_file_nb = 0
             self.total_file_nb = 0
             self.treated_file_nb = 0
-            self.ignore = ""
+            self.ignore = [""]
             if self.AUTO : 
                 self.AUTO = False
                 self.scan_folder()
@@ -724,7 +749,7 @@ class Application(tk.Frame):
 
 if __name__ == '__main__':
     #Logger 
-    log_lvl = logging.DEBUG
+    log_lvl = logging.INFO
     logger = logging.getLogger("MEP")
     logger.setLevel(log_lvl)
 
