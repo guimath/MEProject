@@ -59,6 +59,7 @@ class Application(tk.Frame):
         self.a_good_file = []
         self.a_maybe_file = []
         self.a_nothing_file = []
+        self.finished = True    
 
         self.logger = self.dl_logger(self)        
         # getting info from config file :
@@ -304,7 +305,7 @@ class Application(tk.Frame):
 
         canvas = tk.Canvas(self, width=750, height=500, borderwidth=0)
         frame = tk.Frame(canvas, width=750, height=500)
-        vsb = tk.Scrollbar(root, orient="vertical", command=canvas.yview)
+        vsb = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=vsb.set)
 
         vsb.grid(row=0, column=1, sticky = "ns")
@@ -353,7 +354,7 @@ class Application(tk.Frame):
                 else :
                     tk.Label(frame, wraplength=150, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
 
-        tk.Button(frame,text="Validate",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
+        tk.Button(frame,text="Validate\n uwu \n\n\n uwu\n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu  ",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
 
     # displays ending stats
     def ending_wnd(self) : 
@@ -552,6 +553,7 @@ class Application(tk.Frame):
             if self.retry_bt[i].get() :
                 self.tmp_file.pop(i-nb)
                 nb +=1
+                self.finished = False
         self.remaining_file_nb = len(self.tmp_file)
         self.file_nb = 0
         if self.remaining_file_nb == 0 :
@@ -738,7 +740,8 @@ class Application(tk.Frame):
             self.total_file_nb = 0
             self.treated_file_nb = 0
             self.ignore = [""]
-            if self.AUTO : 
+            if self.AUTO and not self.finished : 
+                self.finished = True 
                 self.AUTO = False
                 self.scan_folder()
             else :
