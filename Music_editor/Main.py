@@ -354,7 +354,7 @@ class Application(tk.Frame):
                 else :
                     tk.Label(frame, wraplength=150, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
 
-        tk.Button(frame,text="Validate\n uwu \n\n\n uwu\n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu \n uwu \n\n\n uwu  ",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
+        tk.Button(frame,text="Validate",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
 
     # displays ending stats
     def ending_wnd(self) : 
