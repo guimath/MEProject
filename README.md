@@ -1,4 +1,4 @@
-# MEProject
+# Music Editor Project
 
 
 ## Description
@@ -9,38 +9,66 @@ It is designed to make downloading music and reorganizing your music library eas
 If you just want to use it, you can get the .exe/.app  version that won't require any software install (you can skip developers paragraph)
 
 ## User manual
-**How to use the config file :** (config.json)
-This file allows you to change what the program will do. You can modify it by simply double clicking on it a modifying a the value of any given key. The keys are :  
-* `folder_name`        : a string that will be used as the name of the folder where all music will be moved once processed. Doesn't need to already exist (the program will create it if needed)  
-* `prefered_feat_sign` : a String that will be used as the featuring sign on tracks with multiple artists. Title of such songs will be _title (preferred_feat_sign second_artist)_  
-* `default_genre`      : a String that will be used as the default genre if no genre has been found.  
-* `get_label`          : a boolean (true or false) to add label to tags  
-* `get_bpm`            : a boolean (true or false) to add bpm to tags  
-* `get_lyrics`         : a boolean (true or false) to add Lyrics to tags  
-* `store_image_in_file`: a boolean (true or false) to include the artwork directly in the file or to add the image separately.
+
+### What files are needed ?
+
+You need to have in the same folder :
+* the executable (1MEP.exe/1MEP.app)
+* the config file (config.json)
+* the ffmpeg folder (contains a program used during download)
+
+And that's it ! 
+
+### What are the different modes ? 
+* The first one is a way to standardize a big music library, or a way to go quickly if you have a lot of files to process. It will scan the folder of the program, search a match for every file automatically and then let you verify the infos. if you see an incorrect match, you can just check the `retry` checkbox. Once you have looked through all the files you just click the `validate` button, all the unchecked files will be processed and it will go to the second mode to fix the issues with the rest of the files
+
+
+* The second mode is slightly slower but gives more control. Before each search you get to check/modify the title and artist that will be used for the search. Then once you have picked those, you will get a detailed display of the information found. If it's not the correct result, you can click :
+    * `next match/ previous match` to cycle through all the results found 
+    * `retry` if you made a mistake on the title or artist (removing weird characters helps sometimes) 
+    * `skip` if you really find nothing (I will add a way to manually fill the tags at some point)
+    * `ok` if its all good :)
+
+    The file will then be processed/skipped and you do the same for the next file.
+
+
+* The third mode allows you to download music from Youtube. You simply fill the URL you want to download (you can also download a whole playlist like an album by checking the `Whole playlist ?` checkbox). And then click the `download` button. The download will start. It is relatively unreliable and can be a bit slow sometimes but it usually works. Once the download is complete you will get back to one of the two first modes wether you download a single file or not.
+
+
+### How is my music stored ? 
+The program will put all the files correctly processed in the music folder (organized as ``artist/album/track_nb-title_of_track.mp3``) and leave the untreated files where they were
+
+### Settings 
+The settings are stored in the config.json file. The allow you to change what the program will do. You can modify them by clicking on `settings` in the start window 
+
+It allows you to modify :
+* wether or not you want to search for :
+
+    * the label/ copyright
+    * the bpm
+    * the lyrics
+
+    if you don't care about any of those infos you should deselect them as they tend to make the search of infos slightly longer
+
+
+* `wether or not you want the artwork to be included in the music files`
+    
+    It's usually better to not included it in every files as it will result in a larger size of files but might be easier depending on what music player you use.
+
+* `the name of the folder where the music will go` 
+
+    it can be any name you like (for example "my music") or a absolute path to a folder (for example "/home/guilhem/Musique")
+
+* `Your preferred featuring acronym`      
+
+    it will be included in the titles of songs with multiple artists like that : 
+    
+    ___TITLE (FEAT_ACRONYM OTHER_ARTIST)___
+* `The defaut genre`     
+
+    If no genre has been found this is what will show.
+
      
-
-**How to use depending on the mode :**  
-* `full auto` : To standardize a big music library     
-**input needed :** none, but that means the files need to have correct title and artist tags. if the info found is unsure, the file will be skipped    
-**Speed :** It is relatively quick but adding lyrics will make it run slower. Because this mode is fully automatic, you can simply run it in the background
-
-* `Semi auto` To add new files w/ or w/o correct tags  
-**input needed :** you will need to check wether the info found in the tags is correct or you will need to _manually_ add title and artist the program should then process the file automatically    
-**Speed :** should still be a lot quicker than manually changing tags  
-**Specifics :** there is also a manual tagging option if spotify doesn't  have the music
-
-* `downloads` To download music from youtube url
-**input needed :** first you need to choose wether you want to download a whole playlist (if you want to dl an album for example) and then paste the url of the song to download  
-**Speed :** the dl (while this method is a lot quicker than online mp3 converters) is a bit slow but once again you can let the program run in the background once you have entered the url. 
-
-* `discovery` To better understand how the program works  
-**input needed :** this mode is heavily reliant on user verification so you will have to input a lot of info. This allows you to control everything and test the program before using it on a bigger scale.  
-**Speed :** this mode is not designed to be quick, it is simply recommended that you start with this mode if you're weary of my coding skills. You should not be using this mode for more than a few files.
-
-**output :** it will put all the files correctly processed in the music folder (organized as ``artist/album/track_nb-title_of_track.mp3``) and leave the untreated files where they were
-
-
 ## Developers
 **Required :** To work properly, python 3 is needed. You'll also need a few packages : 
 * `eyed3` : mp3 tag editor
@@ -49,6 +77,6 @@ This file allows you to change what the program will do. You can modify it by si
 * `bs4` : to scrap website for infos
 * `youtube-dl` : to download music from youtube
 
-To install those, you can do for each package "pip install _nameOfPackage_"  or you can run "pip install requirements.txt"
+To install those, you can do for each package "pip install _nameOfPackage_"  or you can run "pip install -r requirements.txt"
 
-The youtube-dl package also requires ffprobe or ffmpeg. Installation varies depending on the os.
+The youtube-dl package also requires ffprobe and ffmpeg. Installation varies depending on the os. You can also just add a folder named ffmpeg with the executable for ffprobe and ffmpeg. 
