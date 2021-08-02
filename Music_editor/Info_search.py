@@ -164,6 +164,8 @@ class Info_search:
             page = re.findall('"track_share_url":"([^"]*)', extract_mxm_props(soup))
             if page:
                 url = codecs.decode(page[0], 'unicode-escape')
+                #print(f'musixmatch : {url=}')
+
                 lyrics_page = requests.get(url, headers=header)
                 soup = BeautifulSoup(lyrics_page.text, 'html.parser')
                 props = extract_mxm_props(soup)
@@ -185,6 +187,7 @@ class Info_search:
         lyrics = "Error1"
         try:
             url = "http://genius.com/%s-%s-lyrics" % (slugify(artist),slugify(title))
+            #print(f'genius : {url=}')
             lyrics_page = requests.get(url)
             soup = BeautifulSoup(lyrics_page.text, 'html.parser')
             lyrics_container = soup.find("div", {"class": "lyrics"})
