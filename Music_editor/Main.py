@@ -439,6 +439,7 @@ class Application(tk.Frame):
 
     def retry(self) : 
         util.rm_file(self.current_image_name)
+        self.current_image_name = ""
         self.prep_search_wnd(self.a_t[0], self.a_t[1])
 
     def download(self) :
@@ -659,9 +660,9 @@ class Application(tk.Frame):
             # adding featured artist to title 
             nb_artist = len(track['artists'])
             if nb_artist == 2:
-                track['name'] = track['name']+" ("+self.params['feat_acronym']+track['artists'][1]['name']+")"  # correct title
+                track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+")"  # correct title
             elif nb_artist > 2:
-                track['name'] = track['name']+" ("+self.params['feat_acronym']+track['artists'][1]['name']+ \
+                track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+ \
                                                 " & "+track['artists'][2]['name']+")"  # correct title
             
             # modifying the tags
@@ -719,7 +720,7 @@ class Application(tk.Frame):
     def skip(self) :
         logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         util.rm_file(self.current_image_name)
-    
+        self.current_image_name = ""
         self.ignore.append(self.current_file_name)
         if self.remaining_file_nb > 1:
             self.file_nb += 1  # file being treated = next in the list
