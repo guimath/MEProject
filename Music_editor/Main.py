@@ -298,13 +298,14 @@ class Application(tk.Frame):
     # AUTO : user checks the infos
     def verifications_wnd(self) :
         self.reset_gui()
+        self.master.geometry('1000x500')
         # making window scrollable :
         def onFrameConfigure(canvas):
             '''Reset the scroll region to encompass the inner frame'''
             canvas.configure(scrollregion=canvas.bbox("all"))
 
-        canvas = tk.Canvas(self, width=750, height=500, borderwidth=0)
-        frame = tk.Frame(canvas, width=750, height=500)
+        canvas = tk.Canvas(self, width=950, height=500, borderwidth=0)
+        frame = tk.Frame(canvas, width=950, height=500)
         vsb = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
         canvas.configure(yscrollcommand=vsb.set)
 
