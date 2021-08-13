@@ -56,7 +56,7 @@ class Info_search:
         #Start with musixmatch
         lyrics = self._musixmatch(artist, title)
         service = "musixmatch"
-        if lyrics == "Error1" :
+        if lyrics == "Error1" or lyrics == "Error2" :
             # if no result go to genius
             lyrics = self._genius(artist, title)
             service = "genius"
@@ -65,9 +65,6 @@ class Info_search:
                 return ("", "lyrics not found")
             else :
                 return lyrics, service
-
-        elif lyrics == "Error2" :
-            return ("", "lyrics not found")
 
         else :
             return lyrics, service
@@ -141,34 +138,41 @@ class Info_search:
                 track['bpm'] = 0  # default
         
         return track 
+    
+
 
     def _musixmatch(self, artist, title):
-
-        url = ""
-        lyrics = "Error1"
-
-        def extract_mxm_props(soup_page):
+        def _extract_mxm_props(soup_page):
             scripts = soup_page.find_all("script")
             props_script = None
+            
             for script in scripts:
                 if script and script.contents and "__mxmProps" in script.contents[0]:
                     props_script = script
-                    break
-            return props_script.contents[0]
+                    return props_script.contents[0]
+            return False
+
+
+        url = ""
+        lyrics = "Error1"
 
         try:
             url = "https://www.musixmatch.com/search/%s-%s/tracks" % (artist, title)
             header = {"User-Agent": "curl/7.9.8 (i686-pc-linux-gnu) libcurl 7.9.8 (OpenSSL 0.9.6b) (ipv6 enabled)"}
             search_results = requests.get(url, headers=header)
             soup = BeautifulSoup(search_results.text, 'html.parser')
-            page = re.findall('"track_share_url":"([^"]*)', extract_mxm_props(soup))
+            props = _extract_mxm_props(soup)
+            if props :
+                page = re.findall('"track_share_url":"([^"]*)', props)
+            else :
+                return "Error2" # ip address blocked
             if page:
                 url = codecs.decode(page[0], 'unicode-escape')
                 #print(f'musixmatch : {url=}')
 
                 lyrics_page = requests.get(url, headers=header)
                 soup = BeautifulSoup(lyrics_page.text, 'html.parser')
-                props = extract_mxm_props(soup)
+                props = _extract_mxm_props(soup)
                 if '"body":"' in props:
                     lyrics = props.split('"body":"')[1].split('","language"')[0]
                     lyrics = lyrics.replace("\\n", "\n")
@@ -179,8 +183,8 @@ class Info_search:
                     if album:
                         album = album.find(class_="mui-cell__title").getText()
         except Exception as error:
-            print(error)
-            lyrics = "Error2"
+            print(f'error during lyrics search (Musixmatch) : {error}')
+            lyrics = "Error2" #
         return lyrics
 
     def _genius(self, artist, title):
@@ -198,6 +202,6 @@ class Info_search:
                     print("Please contact programmer -> unwanted bug")
                 #    lyrics = "Error2"
         except Exception as error:
-            print(error)
+            print(f'error during lyrics search (Genius) : {error}')
         return lyrics
 
