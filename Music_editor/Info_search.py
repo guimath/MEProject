@@ -49,26 +49,23 @@ class Info_search:
     """ gets lyrics from web 
         @return tuple containing two strings : lyrics and the service used (i.e. genius etc) """
     def get_lyrics(self, artist, title):
-        #slugify both
         title = util.clean_string(title)
         artist = util.clean_string(artist)
         
-        #Start with musixmatch
-        lyrics = self._musixmatch(artist, title)
-        service = "musixmatch"
-        if lyrics == "Error1" or lyrics == "Error2" :
-            # if no result go to genius
-            lyrics = self._genius(artist, title)
-            service = "genius"
-            if lyrics == "Error1" :
-                # if no result stop
-                return ("", "lyrics not found")
-            else :
-                return lyrics, service
-
-        else :
+        lyrics, service = self._genius(artist, title), 'Genius'
+        if lyrics :
             return lyrics, service
 
+        lyrics,  service = self._musixmatch(artist, title), "Musixmatch"
+        if lyrics :
+            return lyrics, service
+        
+        lyrics, service = self._az_lyrics(artist, title), 'AZLyrics'
+        if lyrics :
+            return lyrics, service
+
+        return ("", "Lyrics not found")
+           
     """ -----------------------------------------------
         --------------- Private methods ---------------
         ----------------------------------------------- 
@@ -139,69 +136,93 @@ class Info_search:
         
         return track 
     
+    def _scrap(self, url):
+        try :
+            headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"}
+            text = requests.get(url, headers).text
+            bs = BeautifulSoup(text, 'html.parser')
+        except Exception as error:
+            print(f'error during lyrics search ({url=}) : {error}')
+            return False
+        return bs
 
 
     def _musixmatch(self, artist, title):
+        url = "https://www.musixmatch.com/search/%s-%s/tracks" % (artist, title)
+        #print(f'musixmatch : {url=}')
+        
         def _extract_mxm_props(soup_page):
             scripts = soup_page.find_all("script")
             props_script = None
-            
             for script in scripts:
+                print(script.content)
                 if script and script.contents and "__mxmProps" in script.contents[0]:
                     props_script = script
                     return props_script.contents[0]
             return False
 
-
-        url = ""
-        lyrics = "Error1"
-
-        try:
-            url = "https://www.musixmatch.com/search/%s-%s/tracks" % (artist, title)
-            header = {"User-Agent": "curl/7.9.8 (i686-pc-linux-gnu) libcurl 7.9.8 (OpenSSL 0.9.6b) (ipv6 enabled)"}
-            search_results = requests.get(url, headers=header)
-            soup = BeautifulSoup(search_results.text, 'html.parser')
+        soup = self._scrap(url)
+        if soup :
             props = _extract_mxm_props(soup)
             if props :
                 page = re.findall('"track_share_url":"([^"]*)', props)
-            else :
-                return "Error2" # ip address blocked
-            if page:
-                url = codecs.decode(page[0], 'unicode-escape')
-                #print(f'musixmatch : {url=}')
-
-                lyrics_page = requests.get(url, headers=header)
-                soup = BeautifulSoup(lyrics_page.text, 'html.parser')
-                props = _extract_mxm_props(soup)
-                if '"body":"' in props:
-                    lyrics = props.split('"body":"')[1].split('","language"')[0]
-                    lyrics = lyrics.replace("\\n", "\n")
-                    lyrics = lyrics.replace("\\", "")
-                    if not lyrics.strip():
-                        lyrics = "Error1"
-                    album = soup.find(class_="mxm-track-footer__album")
-                    if album:
-                        album = album.find(class_="mui-cell__title").getText()
-        except Exception as error:
-            print(f'error during lyrics search (Musixmatch) : {error}')
-            lyrics = "Error2" #
-        return lyrics
+                if page:
+                    url = codecs.decode(page[0], 'unicode-escape')
+                    print(f'musixmatch : {url=}')
+                    soup = self._scrap(url)
+                    if soup :
+                        props = _extract_mxm_props(soup)
+                        if '"body":"' in props:
+                            lyrics = props.split('"body":"')[1].split('","language"')[0]
+                            lyrics = lyrics.replace("\\n", "\n")
+                            lyrics = lyrics.replace("\\", "")
+                            if lyrics.strip():
+                                return lyrics
+        
+        return False 
 
     def _genius(self, artist, title):
-        lyrics = "Error1"
-        try:
-            url = "http://genius.com/%s-%s-lyrics" % (slugify(artist),slugify(title))
-            #print(f'genius : {url=}')
-            lyrics_page = requests.get(url)
-            soup = BeautifulSoup(lyrics_page.text, 'html.parser')
+        artist = slugify(artist)
+        title = slugify(title)
+        url = "http://genius.com/%s-%s-lyrics" % (artist,title)
+        #print(f'genius : {url=}')
+        
+        soup = self._scrap(url)
+        if soup :
             lyrics_container = soup.find("div", {"class": "lyrics"})
             if lyrics_container:
-                
-                lyrics = lyrics_container.get_text()
-                if artist.lower().replace(" ", "") not in soup.text.lower().replace(" ", ""):
-                    print("Please contact programmer -> unwanted bug")
-                #    lyrics = "Error2"
-        except Exception as error:
-            print(f'error during lyrics search (Genius) : {error}')
-        return lyrics
+                    lyrics = lyrics_container.get_text()
+                    if artist.lower().replace(" ", "") in soup.text.lower().replace(" ", ""):
+                        return lyrics
+        return False
 
+    def _az_lyrics(self, artist, title):
+        artist = util.remove_the(slugify(artist,separator=""))
+        title = slugify(title,separator="")
+        url = "https://www.azlyrics.com/lyrics/%s/%s.html" % (artist,title) 
+        #print(f'azlyrics : {url=}')
+
+        soup = self._scrap(url)
+        if soup :
+            center = soup.body.find("div", {"class": "col-xs-12 col-lg-8 text-center"})
+            if center:
+                lyrics = center.find("div", {"class": None}).text
+
+                lyrics = re.sub(r"<br>", " ", lyrics)
+                lyrics = re.sub(r"<i?>\W*", "[", lyrics)
+                lyrics = re.sub(r"\W*</i>", "]", lyrics)
+                lyrics = re.sub(r"&quot;", "\"", lyrics)
+                lyrics = re.sub(r"</div>", "", lyrics)
+                lyrics = lyrics.strip()
+                return lyrics
+        
+        return False
+   
+    def _lyrics_ovh(self, artist, title):
+        url = "https://api.lyrics.ovh/v1/%s/%s" % (artist, title)
+        #print(f'lyricsOVH : {url=}')
+
+        r = requests(url)
+        print(r.status_code)
+        print(r.text)
+        print(r.content)
