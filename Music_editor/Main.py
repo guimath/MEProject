@@ -38,9 +38,15 @@ class Application(tk.Frame):
         self.master.title("MEProject")
         self.grid()
         self.auto = False
+        self.global_start_wnd()
+
         
-        # Working dir
-        ABSOLUTE_PATH = os.path.dirname(__file__) + os.path.sep 
+        # Working dir 
+        # determine if application is a script file or frozen exe
+        if getattr(sys, 'frozen', False):
+            ABSOLUTE_PATH = os.path.dirname(sys.executable)
+        elif __file__:
+            ABSOLUTE_PATH = os.path.dirname(__file__)
         os.chdir(ABSOLUTE_PATH)
 
         # Var init : 
@@ -85,7 +91,6 @@ class Application(tk.Frame):
         self.logger = self.dl_logger(self)        
         self.web = Info_search(self.params) 
         self.tagger = Tagger(self.params, self.ADD_SIGN, self.SIGN) 
-        self.global_start_wnd()
         
 
     """ -----------------------------------------------
