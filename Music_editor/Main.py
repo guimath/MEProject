@@ -37,8 +37,9 @@ class Application(tk.Frame):
         self.master.geometry('800x500')
         self.master.title("MEProject")
         self.grid()
-        self.AUTO = False
+        self.auto = False
         
+        # Working dir
         ABSOLUTE_PATH = os.path.dirname(__file__) + os.path.sep 
         os.chdir(ABSOLUTE_PATH)
 
@@ -48,9 +49,6 @@ class Application(tk.Frame):
         self.remaining_file_nb = 0
         self.total_file_nb = 0
         self.file_nb = 1
-
-        self.not_supported_extension = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
-        self.supported_extensions = [".mp3"]  # list of all accepted extensions
         
         self.file_extension = [".mp3"]   # will store all file extensions
         self.file_name = ["music.mp3"]   # will store all file names
@@ -63,29 +61,28 @@ class Application(tk.Frame):
         self.a_maybe_file = []
         self.a_nothing_file = []
         self.finished = True    
-
-        self.logger = self.dl_logger(self)        
+       
         # getting info from config file :
         self.params = util.read_config(self)
 
-        #Global params for GUI might be changed in config
-        self.FONT_NAME = "helvetica"
-        self.FONT_SIZE = "14"
-        self.FONT = self.FONT_NAME+" " + self.FONT_SIZE
-        #tk.font.Font(self, font= self.FONT, name="normal", exists=True)
+        # CONSTANTS params 
+        self.NOT_SUPPORTED_EXTENSIONS = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
+        self.SUPPORTED_EXTENSIONS = [".mp3"]  # list of all accepted extensions
 
-        #global 
-        self.ADD_SIGN = False # param (maybe changed in config... not sure yet)
+        self.ADD_SIGN = False 
 
         if self.ADD_SIGN :
             self.SIGN = "MEP by GM"
         else :
             self.SIGN = "---"
 
-        #temp : 
-        #self.dispaly_infos_wnd({'album':{"name":"album name", "release_date": "01-32-50", "total_tracks":"12"}, 'artists':[{"name":"artist name"}], "track_number":"10","name":" track name", "genre":"pop", "lyrics":{"service":"musixmatch"}})
-        #self.return_url()
-        
+        self.FONT_NAME = "helvetica"
+        self.FONT_SIZE = "14"
+        self.FONT = self.FONT_NAME+" " + self.FONT_SIZE
+        #tk.font.Font(self, font= self.FONT, name="normal", exists=True) # doesn't work...
+
+        # CLASS        
+        self.logger = self.dl_logger(self)        
         self.web = Info_search(self.params) 
         self.tagger = Tagger(self.params, self.ADD_SIGN, self.SIGN) 
         self.global_start_wnd()
@@ -100,11 +97,11 @@ class Application(tk.Frame):
             child.destroy()
 
     def warn(self, message) :
-        if not self.AUTO :
+        if not self.auto :
             messagebox.showwarning('Warning', message)
             
     def ask(self,message) :
-        if self.AUTO :
+        if self.auto :
             return False 
         else :
             return messagebox.askyesno('Verification',message)
@@ -363,7 +360,7 @@ class Application(tk.Frame):
     # displays ending stats
     def ending_wnd(self) : 
         self.reset_gui()
-        if self.AUTO and self.treated_file_nb < self.total_file_nb:
+        if self.auto and self.treated_file_nb < self.total_file_nb:
             self.reset_all() # if there are still files untreated
         else :
             tk.Label(self, text="All done !").grid(columnspan=2)
@@ -396,7 +393,8 @@ class Application(tk.Frame):
                 self.app.dl_status.set("Downloading : ")
                 self.app.update()
             elif "% of " in msg : 
-                tmp , _ = msg.replace("[download]", "").split("%")
+                tmp , _ = msg.replace("[download]", "").split("%") #looks like '\\r\\x1b[K   0.0'
+                _ , tmp = tmp.split("[K")
                 self.app.dl_status.set("Downloading : "+ tmp+ "%")
                 self.app.update()
 
@@ -421,10 +419,10 @@ class Application(tk.Frame):
         logger.debug("in func : " + inspect.currentframe().f_code.co_name)
 
         if mode_nb == 0 :
-            self.AUTO = True
+            self.auto = True
             self.scan_folder()
         elif mode_nb == 1 :
-            self.AUTO = False
+            self.auto = False
             self.scan_folder()
         elif mode_nb == 2 : 
             self.get_URL_wnd()
@@ -466,7 +464,7 @@ class Application(tk.Frame):
             
             # If only one file was dl semi-auto process else full auto
             if not no_playlist :
-                self.AUTO = True
+                self.auto = True
             
             self.scan_folder()
 
@@ -478,12 +476,12 @@ class Application(tk.Frame):
         for temp_file_name in os.listdir():
             _ , temp_file_extension = os.path.splitext(temp_file_name)
 
-            if temp_file_extension in self.supported_extensions and temp_file_name not in self.ignore:
+            if temp_file_extension in self.SUPPORTED_EXTENSIONS and temp_file_name not in self.ignore:
                 self.file_name.append(temp_file_name)
                 self.file_extension.append(temp_file_extension)
                 self.remaining_file_nb += 1
 
-            elif (temp_file_extension in self.not_supported_extension):
+            elif (temp_file_extension in self.NOT_SUPPORTED_EXTENSIONS):
                 wrong_format = True
                 wrong_file_name = temp_file_name
 
@@ -494,7 +492,7 @@ class Application(tk.Frame):
             self.warn("no music file found")
             self.ending_wnd()
 
-        elif self.AUTO :
+        elif self.auto :
             self.current_file_name = ""
             self.waiting_wnd()
             self.auto_process()
@@ -714,7 +712,7 @@ class Application(tk.Frame):
         if self.remaining_file_nb > 1:
             self.file_nb += 1  # file being treated = next in the list
             self.remaining_file_nb -= 1  # one file done
-            if not self.AUTO :
+            if not self.auto :
                 self.scan_data()
             else :
                 self.prep_next() 
@@ -729,7 +727,7 @@ class Application(tk.Frame):
         if self.remaining_file_nb > 1:
             self.file_nb += 1  # file being treated = next in the list
             self.remaining_file_nb -= 1  # one file done
-            if not self.AUTO :
+            if not self.auto :
                 self.scan_data() 
             else :
                 self.prep_next()
@@ -745,9 +743,9 @@ class Application(tk.Frame):
             self.total_file_nb = 0
             self.treated_file_nb = 0
             self.ignore = [""]
-            if self.AUTO and not self.finished : 
+            if self.auto and not self.finished : 
                 self.finished = True 
-                self.AUTO = False
+                self.auto = False
                 self.scan_folder()
             else :
                 self.global_start_wnd()
