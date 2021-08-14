@@ -762,6 +762,13 @@ class Application(tk.Frame):
     def end_all(self) :
         sys.exit("")
 
+
+def main():
+    root = tk.Tk()
+    app = Application(master=root)
+    app.mainloop()
+
+
 if __name__ == '__main__':
     #Logger 
     log_lvl = logging.INFO
@@ -773,9 +780,8 @@ if __name__ == '__main__':
     ch.setLevel(log_lvl)
     ch.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
     logger.addHandler(ch)
+    main()
 
-    root = tk.Tk()
-    app = Application(master=root)
-    app.mainloop()
+    
 
 
