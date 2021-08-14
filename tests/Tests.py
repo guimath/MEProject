@@ -5,7 +5,7 @@ import os
 import logging
 
 #Not working 
-#from Music_editor import Downloads, Info_search, Tagger, Utilitaries
+from mep import Downloads, Info_search, Tagger, Utilitaries
 from slugify import slugify
 
 import requests, sys, os, re, urllib
