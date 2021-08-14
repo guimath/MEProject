@@ -177,18 +177,18 @@ class Application(tk.Frame):
         # Common to both 
         tk.Label(self,text=" Downloading screen\n").grid(row=1, columnspan=2)
         tk.Label(self, text="State : ", height=2).grid(row=5)
-        tk.Label(self, textvariable=self.dl_status).grid(row=5, column=1)
+        tk.Label(self, textvariable=self.dl_status, width=20,anchor="nw").grid(row=5, column=1)
 
         #specific
         if no_playlist :
             tk.Label(self, text="Current file :").grid(row=3)
-            tk.Label(self, textvariable=self.current_dl_name).grid(row= 3, column=1)
+            tk.Label(self, width=30, anchor="nw", textvariable=self.current_dl_name).grid(row= 3, column=1)
 
         else :
             tk.Label(self, text="Playlist : ").grid(row=3)
             tk.Label(self, textvariable=self.playlist_name).grid(row=3, column=1)
             tk.Label(self, text="Current file : ").grid(row=4)
-            tk.Label(self, textvariable=self.current_dl_name).grid(row= 4, column=1)
+            tk.Label(self, width=30, anchor="nw", textvariable=self.current_dl_name).grid(row= 4, column=1)
 
         self.update()
 
