@@ -19,6 +19,12 @@ def remove_feat(title):
 
     return title.strip()
 
+def remove_the(string) :
+    if string[:3] == "the" :
+        return string[3:]
+    else :
+        return string
+
 """ Removes / modifies none ascii characters and punctuation
     @return the clean string"""
 def clean_string(data) :
