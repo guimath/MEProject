@@ -291,9 +291,11 @@ class Application(tk.Frame):
     def waiting_wnd(self):
         self.reset_gui()
         tk.Label(self, text="Going through your files...").grid(columnspan=2)
-        tk.Label(self, text="Current : ").grid(row = 1)
+        tk.Label(self, text="\nCurrent : \n").grid(row = 1)
         self.tmp_cf = tk.StringVar(value="")
-        tk.Label(self, textvariable=self.tmp_cf).grid(row = 1, column=1)
+        tk.Label(self, textvariable=self.tmp_cf, width= 40, anchor="nw").grid(row = 1, column=1)
+        self.progress_auto = tk.StringVar(value="")
+        tk.Label(self, textvariable=self.progress_auto, width=20).grid(row=3,columnspan=2)
 
     # AUTO : user checks the infos
     def verifications_wnd(self) :
@@ -510,6 +512,7 @@ class Application(tk.Frame):
         title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
         
         self.tmp_cf.set(self.current_file_name)
+        self.progress_auto.set("file n°"+str(self.file_nb)+" out of "+str(self.total_file_nb))
         self.update()
 
         if type(title) != type(None):
