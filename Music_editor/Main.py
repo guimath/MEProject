@@ -38,6 +38,9 @@ class Application(tk.Frame):
         self.master.title("MEProject")
         self.grid()
         self.AUTO = False
+        
+        ABSOLUTE_PATH = os.path.dirname(__file__) + os.path.sep 
+        os.chdir(ABSOLUTE_PATH)
 
         # Var init : 
         #local : 
