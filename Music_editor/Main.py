@@ -401,7 +401,8 @@ class Application(tk.Frame):
                 self.app.update()
             elif "% of " in msg : 
                 tmp , _ = msg.replace("[download]", "").split("%") #looks like '\\r\\x1b[K   0.0'
-                _ , tmp = tmp.split("[K")
+                if "[K" in tmp :
+                    _ , tmp = tmp.split("[K")
                 self.app.dl_status.set("Downloading : "+ tmp+ "%")
                 self.app.update()
 
