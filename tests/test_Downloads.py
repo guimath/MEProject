@@ -1,7 +1,10 @@
 # -*-coding:utf-8 -*
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
+os.chdir(os.path.dirname(__file__)) # places in corect dir
 
 from mep import Downloads
-# not working arghhhh
+import time 
 
 class Interface :
     def __init__(self):
@@ -9,9 +12,32 @@ class Interface :
     
     def warn(self, msg):
         print(msg)
+    
+    def debug(self, msg):
+        pass 
+    def warning(self, msg):
+        pass
+    def error(self,msg):
+        print(f'Error during yt-dl : {msg}')
 
+def dl_hook(d) : 
+    pass
 
 interface = Interface()
 interface.warn("starting")
-img_url = "https://www.google.com/url?sa=i&url=https%3A%2F%2Fen.wikipedia.org%2Fwiki%2FOK_Computer&psig=AOvVaw2rDnGxUuPbwYg08DhsMK7e&ust=1629066638699000&source=images&cd=vfe&ved=0CAoQjRxqFwoTCIDAiqXIsfICFQAAAAAdAAAAABAD"
-Downloads.dl_image(img_url,"test_image.png", interface)
+img_url = "https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856"
+name = "test_image.jpg"
+
+start = time.time()
+assert(name == Downloads.dl_image(img_url,name, interface))
+end = time.time()
+print(f'dl_image working (took {end-start}s)')
+os.remove(name)
+
+yt_url = "https://www.youtube.com/watch?v=83m261lAlrs"
+name = "yt-DL_Don't woof.mp3"
+start = time.time()
+assert(Downloads.dl_music(yt_url,True, interface, [dl_hook]))
+end = time.time()
+print(f'dl_music working (took {end-start}s)')
+os.remove(name)
