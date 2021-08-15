@@ -3,8 +3,10 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
 os.chdir(os.path.dirname(__file__)) # places in corect dir
 
-from mep import Info_search
 import time 
+
+from mep import Info_search
+
 
 def main() :
     artist= "Radiohead" 
