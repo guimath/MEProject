@@ -537,7 +537,7 @@ class Application(tk.Frame):
         if items :         
             track = items[0]
             track = self.web.get_advanced_info(track)
-            if certain :
+            if certain and util.similar(artist,track['artists'][0]['name']):
                 self.a_good_file.append({"entry_title" : title, "entry_artist": artist, "title" : track['name'], "artist": track['artists'][0]['name'], "album":track['album']['name'],"info" : track, "file_name" : self.current_file_name})
                 self.next_auto()
             else :
