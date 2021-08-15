@@ -20,7 +20,7 @@ setuptools.setup(
         "License :: OSI Approved :: unlicense",
         "Operating System :: OS Independent",
     ],
-    package_dir={"": "Music_editor"},
-    packages=setuptools.find_packages(where="Music_editor"),
+    package_dir={"": "mep"},
+    packages=setuptools.find_packages(where="mep"),
     python_requires=">=3.6",
 )
