@@ -6,23 +6,6 @@ os.chdir(os.path.dirname(__file__)) # places in corect dir
 from mep import Info_search
 import time 
 
-class Interface :
-    def __init__(self):
-        pass
-    
-    def warn(self, msg):
-        print(msg)
-    
-    def debug(self, msg):
-        pass 
-    def warning(self, msg):
-        pass
-    def error(self,msg):
-        print(f'Error during yt-dl : {msg}')
-
-def dl_hook(d) : 
-    pass
-
 def main() :
     artist= "Radiohead" 
     title= "Nude"
