@@ -1,8 +1,6 @@
-# for file modification
+import os
 import logging
-import os
 import eyed3  # to parse mp3 files
-import os
 
 # ~ Responsible of all the writing and reading of music file tags ~ #
 #   (only supports mp3 for now)

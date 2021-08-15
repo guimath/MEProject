@@ -1,7 +1,6 @@
-
+import os 
 import string 
 import json
-import os 
 
 # ~ Lib with simple functions to help keep main prog clean ~ #
 

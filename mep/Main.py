@@ -1,8 +1,7 @@
 # -*-coding:utf-8 -*
 
-import os
-import sys
-import time
+import os, sys 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
 
 # for file modification
 import shutil  # to move file
@@ -468,7 +467,6 @@ class Application(tk.Frame):
         else :
             self.dl_status.set("All done") 
             self.update()
-            time.sleep(1)
             
             # If only one file was dl semi-auto process else full auto
             if not no_playlist :

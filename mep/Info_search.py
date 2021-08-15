@@ -1,3 +1,4 @@
+
 from slugify import slugify
 from bs4 import BeautifulSoup  # crawler
 import requests # get web pages
@@ -8,8 +9,9 @@ import codecs # to decode text
 import spotipy  # Spotify API
 from spotipy.oauth2 import SpotifyClientCredentials
 
-import Utilitaries as util
-from pprint import pprint
+#from pprint import pprint
+
+import mep.Utilitaries as util
 
 # ~ Class responsible of all web searches (tags like album, genre etc as well as lyrics) ~ #
 
@@ -226,3 +228,4 @@ class Info_search:
         print(r.status_code)
         print(r.text)
         print(r.content)
+        return False 
