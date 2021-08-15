@@ -257,7 +257,7 @@ class Application(tk.Frame):
         else:
             title = "%s by %s featuring %s & %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'], track['artists'][2]['name'])
         
-        tk.Label(self, relief=tab_relief, wraplength=450, text=title+title+title+ " " + title)\
+        tk.Label(self, relief=tab_relief, wraplength=450, text=title)\
             .grid(row=2,columnspan=3,sticky='nesw')
 
         # Album artwork
