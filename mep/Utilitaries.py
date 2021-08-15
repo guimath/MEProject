@@ -1,8 +1,16 @@
 import os 
 import string 
 import json
+from difflib import SequenceMatcher
+
 
 # ~ Lib with simple functions to help keep main prog clean ~ #
+
+""" Compares two strings 
+    @return True if strings are similar
+"""
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio() > 0.5
 
 """ Removes the "'feat." type from the title
     @return corrected title """
@@ -13,11 +21,11 @@ def remove_feat(title):
         if element in title :
             title =  title[0:title.rfind(element)]
             return title
-    
-
 
     return title.strip()
 
+""" Removes "the" from the title
+    @return corrected title """
 def remove_the(string) :
     if string[:3] == "the" :
         return string[3:]
