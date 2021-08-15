@@ -175,8 +175,8 @@ class Application(tk.Frame):
 
         # create variables that will change during download
         self.dl_status = tk.StringVar(value="Starting process")  
-        self.current_dl_name = tk.StringVar(value="Current file : TBD")
-        self.playlist_name = tk.StringVar(value="Playlist : TBD")
+        self.current_dl_name = tk.StringVar(value="TBD")
+        self.playlist_name = tk.StringVar(value="TBD")
 
         # Common to both 
         tk.Label(self,text=" Downloading screen\n").grid(row=1, columnspan=2)
@@ -392,9 +392,13 @@ class Application(tk.Frame):
                 self.app.playlist_name.set(msg.replace("[download] Downloading playlist: ","").strip())#"playlist_name"
                 self.app.update()
             elif "[download] Downloading" in msg :
+                # [download] Downloading video 1 of 1 :
                 self.video_nb = " " + msg.replace("[download] Downloading ","")+" :" #"video 1 of 12 :""
+                if self.video_nb == " video 1 of 1 :" :
+                    self.video_nb = ""
             elif "[download] Destination:" in msg:
-                self.video_title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))
+                #[download] Destination: yt-DL_The Beatles - Hey Jude.m4a                
+                self.video_title, _ = os.path.splitext(msg.replace("[download] Destination: yt-DL_",""))#video title
                 self.app.current_dl_name.set("%s %s"%(self.video_nb, self.video_title))
                 self.app.dl_status.set("Downloading : ")
                 self.app.update()
