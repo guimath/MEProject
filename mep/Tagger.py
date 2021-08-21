@@ -23,7 +23,6 @@ class Tagger:
             return self._read_mp3(file_name)
         else:
             #Extension not supported | Should never happen
-            logging.error("extension not supported")
             return (None, None, None, None)
 
     """updates music file tags according to track object
@@ -43,9 +42,8 @@ class Tagger:
         else:
             #Should never happen
             if (image_name != ""):
-                action = 0 # removing image
-            else :
-                action = 2
+                os.remove(image_name) # removing image
+            return -1
         
         if action == 0 :
             # removing image from folder
