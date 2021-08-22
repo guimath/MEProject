@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) 
 os.chdir(os.path.dirname(__file__)) # places in corect dir
 
 import time 
+from Test import * 
 
 from mep import Downloads
 
@@ -26,13 +27,13 @@ def dl_hook(d) :
 
 def main() :
     interface = Interface()
-
+    headp("Testing Downloads")
     img_url = "https://i.scdn.co/image/ab67616d0000b273c8b444df094279e70d0ed856"
     name = "test_image.jpg"
     start = time.time()
     assert(name == Downloads.dl_image(img_url,name, interface))
     end = time.time()
-    print(f'dl_image working (took {end-start}s)')
+    greenp(f'dl_image working (took {end-start}s)')
     os.remove(name)
 
     yt_url = "https://www.youtube.com/watch?v=83m261lAlrs"
@@ -40,7 +41,7 @@ def main() :
     start = time.time()
     assert(Downloads.dl_music(yt_url,True, interface, [dl_hook]))
     end = time.time()
-    print(f'dl_music working (took {end-start}s)')
+    greenp(f'dl_music working (took {end-start}s)')
     os.remove(name)
 
 if __name__ == '__main__':
