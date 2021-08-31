@@ -15,21 +15,49 @@ def main() :
     mep = Mep()
     root = tk.Tk()
     interface = Interface.Application(logger,mep,root)
+    
+    tested = "waiting_wnd" # window to be tested
+    
+    if tested == "global_start_wnd":
+        interface.global_start_wnd()
 
+    elif tested == "settings_wnd":
+        interface.settings_wnd()
     
-    #interface.global_start_wnd()
-    #interface.settings_wnd()
-    #interface.get_URL_wnd()  
+    elif tested == "get_URL_wnd":
+        interface.get_URL_wnd()
+
+    elif tested == "prep_search_wnd":
+        interface.prep_search_wnd(mep.artist,mep.title)
+
+    elif tested == "dispaly_infos_wnd":
+        interface.dispaly_infos_wnd(mep.track)
+
+    elif tested == "verifications_wnd":
+        interface.verifications_wnd()
+
+    elif tested == "ending_wnd":
+        interface.ending_wnd()
+
+    elif tested == "dl_wnd_0": #DL WINDOW w/ NO PLAYLIST
+        interface.dl_wnd(True)
+        interface.dl_status.set("Downloading...\n84%")
+        interface.current_dl_name.set("Karma Police")
+
+    elif tested =="dl_wnd_1": #DL WINDOW w/ PLAYLIST
+        interface.dl_wnd(False) 
+        interface.dl_status.set("Downloading...\n84%")
+        interface.current_dl_name.set("1 of 5 : Karma Police")
+        interface.playlist_name.set("Ok Computer")
+
+    elif tested == "waiting_wnd" :
+        interface.waiting_wnd()
+        interface.tmp_cf.set("Karma_police.mp3")
+        interface.progress_auto.set("file n°1 out of 3")
     
-    #interface.prep_search_wnd(mep.artist,mep.title)
-    #interface.dispaly_infos_wnd(mep.track)
-        #interface.waiting_wnd()
-    #interface.verifications_wnd()
-    #interface.ending_wnd()
     #interface.warn("warning")
     #interface.ask("asking")
     
-    #interface.dl_wnd(False) # no playlist
 
     interface.mainloop()
    
