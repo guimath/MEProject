@@ -1,10 +1,10 @@
-from __future__ import unicode_literals
 import os
+import requests #(uses only requests.get)
+import shutil # (uses only shutil.copyfileobj)
 
 import youtube_dl 
 
-import requests
-import shutil
+
 
 # ~ Lib responsible of all downloads (image and music) ~ #
 

@@ -1,15 +1,14 @@
-
-from slugify import slugify
-from bs4 import BeautifulSoup  # crawler
 import requests # get web pages
 import re # get all pages corresponding 
 import codecs # to decode text
 
-# for spotify api
-import spotipy  # Spotify API
-from spotipy.oauth2 import SpotifyClientCredentials
+from slugify import slugify # TODO replace with util slugify
 
-#from pprint import pprint
+from bs4 import BeautifulSoup  # crawler
+
+# for spotify api
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 
 import mep.Utilitaries as util
 

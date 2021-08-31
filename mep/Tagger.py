@@ -1,5 +1,5 @@
 import os
-import logging
+
 import eyed3  # to parse mp3 files
 
 # ~ Responsible of all the writing and reading of music file tags ~ #

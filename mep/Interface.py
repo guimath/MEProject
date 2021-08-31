@@ -1,13 +1,9 @@
-# -*-coding:utf-8 -*
-
-import os, sys 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
+import os 
 
 # GUI
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
-
 
 class Application(tk.Frame):
     def __init__(self, logger, mep, master=None):
@@ -22,11 +18,6 @@ class Application(tk.Frame):
         self.grid()
         self.auto = False
         
-
-    """ -----------------------------------------------
-        --------------- Start of GUI  -----------------
-        ----------------------------------------------- 
-    """
     def reset_gui(self):
         for child in self.winfo_children():
             child.destroy()
@@ -304,6 +295,7 @@ class Application(tk.Frame):
             tk.Button(self, text= "End", command=lambda: self.mep.end_all()).grid(row=3, column=0, pady=15)
             tk.Button(self, text= "Go again", command=lambda: self.mep.reset_all()).grid(row=3, column=1)
         
+
     """ -----------------------------------------------
         ------ logger and hook for yt-dl  -------------
         ----------------------------------------------- 

@@ -1,5 +1,7 @@
-# -*-coding:utf-8 -*
-import sys, os
+#!/usr/bin/env python
+# coding: utf-8 
+
+import os, sys 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
 
 # gui
@@ -9,10 +11,10 @@ import tkinter as tk
 import logging, inspect
 
 # formating strings
-from slugify import slugify
+from slugify import slugify # TODO replace with util slugify
 
 # moving files 
-import shutil #only uses shutil.move 
+import shutil #(only uses shutil.move) 
 
 # local
 import Interface
