@@ -20,15 +20,15 @@ def remove_feat(title):
     for element in lst1 :
         if element in title :
             title =  title[0:title.rfind(element)]
-            return title
+            return title.strip()
 
     return title.strip()
 
 """ Removes "the" from the title
     @return corrected title """
 def remove_the(string) :
-    if string[:3] == "the" :
-        return string[3:]
+    if string[:3] == "the" or string[:3] == "The":
+        return string[3:].strip()
     else :
         return string
 
@@ -47,13 +47,17 @@ def update_config(config, interface):
     try :
         with open("config.json", mode="w") as j_object:
             j_object.write(jsonString)
+        
+        return True
 
     except FileNotFoundError:
         if interface.ask("No config file found \ncreate one ?") :
             pass
+        return True
         
     except Exception as e :
         interface.warn("unknown error during writing to config file : \n" + str(e))
+        return False
 
 
 def read_config(interface) :
@@ -82,8 +86,18 @@ def read_config(interface) :
     
     return params
 
+def create_config() :
+    try :
+        f = open('config.json','w+')
+        f.close()
+        return True
+    except :
+        return False
+        
+
 def rm_file(file_name):
     try :
         os.remove(file_name)
+        return True
     except :
-        pass
+        return False
