@@ -1,5 +1,4 @@
 # -*-coding:utf-8 -*
-from logging import error
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
 os.chdir(os.path.dirname(__file__)) # places in corect dir
