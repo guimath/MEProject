@@ -107,7 +107,7 @@ class Mep :
         self.app.global_start_wnd()
 
     def manual_tagging(self):
-        self.warn("manual tagging not yet implemented")
+        self.app.warn("manual tagging not yet implemented")
         self.skip()
 
     def retry(self) : 
@@ -125,7 +125,7 @@ class Mep :
         self.yt_logger = self.app.dl_logger(self.app)        
         success = dls.dl_music(url,no_playlist,self.yt_logger,[self.app.dl_hook])
         if not success : 
-            if self.ask("Downloading failed, retry ?") :
+            if self.app.ask("Downloading failed, retry ?") :
                 self.app.get_URL_wnd()
             else : 
                 self.app.ending_wnd()    
@@ -195,7 +195,7 @@ class Mep :
             artist = ""      
 
         if encoded_by == self.SIGN: # TODO useless for auto ?
-            if not self.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
+            if not self.app.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
                 self.move_file(self.params['folder_name']+os.path.sep+slugify(artist, separator=" ",lowercase=False)+os.path.sep+slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory
 
         # searching and processing
@@ -268,7 +268,7 @@ class Mep :
         
         # checks wether program already processed file 
         if encoded_by == self.SIGN:
-            if not self.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
+            if not self.app.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
                 self.move_file(self.params['folder_name']+os.path.sep+slugify(artist, separator=" ",lowercase=False)+os.path.sep+slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory 
         
         self.app.prep_search_wnd(artist, title)
@@ -290,8 +290,8 @@ class Mep :
             self.prepare_display(items[0])
 
         else :
-            if self.ask("No match found. Retry with different spelling ?"):
-                self.prep_search_wnd(artist, title)
+            if self.app.ask("No match found. Retry with different spelling ?"):
+                self.app.prep_search_wnd(artist, title)
             else :
                 self.skip()
 
