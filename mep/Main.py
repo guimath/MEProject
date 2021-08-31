@@ -18,8 +18,8 @@ import shutil
 import Interface
 import Downloads as dls
 import Utilitaries as util
-import Tagger
-import Info_search
+from Tagger import Tagger
+from Info_search import Info_search
 
 class Mep :
     def __init__(self) :
