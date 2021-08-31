@@ -1,7 +1,6 @@
-# -*-coding:utf-8 -*
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
-os.chdir(os.path.dirname(__file__)) # places in corect dir
+os.chdir(os.path.dirname(__file__)) # places in correct dir
 
 HEADER = '\033[95m'
 OKBLUE = '\033[94m'
