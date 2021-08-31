@@ -2,23 +2,15 @@
 
 import os, sys 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
-os.chdir(os.path.dirname(__file__)) # places in corect dir
 
 # GUI
 import tkinter as tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 
-#logging 
-import logging 
-import inspect
-
-# formating strings
-from slugify import slugify
 
 class Application(tk.Frame):
     def __init__(self, logger, mep, master=None):
-        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         self.logger = logger
         self.mep = mep
 
@@ -40,11 +32,11 @@ class Application(tk.Frame):
             child.destroy()
 
     def warn(self, message) :
-        if not self.auto :
+        if not self.mep.auto :
             messagebox.showwarning('Warning', message)
             
     def ask(self,message) :
-        if self.auto :
+        if self.mep.auto :
             return False 
         else :
             return messagebox.askyesno('Verification',message)
@@ -57,7 +49,7 @@ class Application(tk.Frame):
 
         mode_names = ['Automatically go through a\nlarge music library', 'fill music tags for a few\nfiles','download music\nfrom youtube URL']
         for i in range(0,len(mode_names)):
-            tk.Button(self, text= mode_names[i], command= lambda x=i: self.mode_selection(x)).grid(row=1, column=i)
+            tk.Button(self, text= mode_names[i], command= lambda x=i: self.mep.mode_selection(x)).grid(row=1, column=i)
         
         tk.Label(self).grid(row=2)
         tk.Button(self, text= "settings", command= self.settings_wnd).grid(row=3, column=1)    
@@ -72,7 +64,7 @@ class Application(tk.Frame):
         lst = ["get_label", "get_bpm","get_lyrics", "store_image_in_file"]
         self.config = {}
         for key in lst :
-            self.config[key] = tk.BooleanVar(value=self.params[key])
+            self.config[key] = tk.BooleanVar(value=self.mep.params[key])
 
         lst = [["get_label", "search for the artist label"],
                ["get_bpm","search for the bpm"],
@@ -90,11 +82,11 @@ class Application(tk.Frame):
         for i in range(len(lst)) :
             tk.Label(self, width= 40, anchor="nw", text=" " + lst[i][1]).grid(row=row_nb+i)
             self.config[lst[i][0]] = tk.Entry(self, width = 30)
-            self.config[lst[i][0]].insert(0, self.params[lst[i][0]])
+            self.config[lst[i][0]].insert(0, self.mep.params[lst[i][0]])
             self.config[lst[i][0]].grid(row=row_nb+i,column=1)
 
         # Button
-        tk.Button(self, padx=20, text = "Save", command= self.update_config).grid(row=row_nb+i+1, columnspan=2)
+        tk.Button(self, padx=20, text = "Save", command= self.mep.update_config).grid(row=row_nb+i+1, columnspan=2)
     
     # DL : user picks URL
     def get_URL_wnd(self):
@@ -106,7 +98,7 @@ class Application(tk.Frame):
         self.input_url = tk.Entry(self,width=60)
         self.input_url.grid(row = 1)
         self.input_url.focus()
-        tk.Button(self, text= "Download", command= self.download).grid(row = 2)
+        tk.Button(self, text= "Download", command= self.mep.download).grid(row = 2)
 
     # DL : keeps user informed about the download process
     def dl_wnd(self, no_playlist) :
@@ -138,11 +130,10 @@ class Application(tk.Frame):
     # NOT AUTO : user picks artist and title to make search
     def prep_search_wnd(self, artist, title) :
         self.reset_gui()
-        tk.Label(self, text="file : "+self.current_file_name).grid(columnspan=2)
+        tk.Label(self, text="file : "+self.mep.current_file_name).grid(columnspan=2)
 
         tk.Label(self, text="title : ").grid(row=1)
         tk.Label(self, text="artist : ").grid(row=2)
-
 
         self.title_ent = tk.Entry(self, width = 30)
         self.title_ent.insert(0, title)
@@ -152,12 +143,13 @@ class Application(tk.Frame):
         self.artist_ent.insert(0, artist)
         self.artist_ent.grid(row=2,column=1)
 
-        tk.Button(self, text="Go!",command=lambda: self.make_search())\
+        tk.Button(self, text="Go!",command=lambda: self.mep.make_search())\
             .grid(row=3,columnspan=2)
     
     # NOT AUTO : displays infos for one track
     def dispaly_infos_wnd(self,track) :
         self.reset_gui()
+
         #Params of the tab:
         lst = [("album",track['album']['name']),
               ("Genre", track['genre']),
@@ -169,12 +161,9 @@ class Application(tk.Frame):
         tab_relief = "solid"
         desc_len = 13
         info_len = 25
-        title_len = desc_len + info_len + row_nb*5 - 1
+        # TODO REMOVE title_len = desc_len + info_len + row_nb*5 - 1
 
-        tk.Label(self, text="file : "+self.current_file_name+"\n").grid(columnspan=3)
-
-        #list to help with the rest
-        
+        tk.Label(self, text="file : "+self.mep.current_file_name+"\n").grid(columnspan=3)        
         
         
         # Line title
@@ -200,34 +189,34 @@ class Application(tk.Frame):
             .grid(row=2,columnspan=3,sticky='nesw')
 
         # Album artwork
-        imagedata = Image.open(self.current_image_name)
+        imagedata = Image.open(self.mep.current_image_name)
         imagedata = imagedata.resize((row_nb*37+2,row_nb*37+2), Image.ANTIALIAS)
         self.imagedata =  ImageTk.PhotoImage(imagedata)
         tk.Label(self, image=self.imagedata,relief=tab_relief)\
             .grid(row=3,rowspan= row_nb, column=2)
 
         #different buttons
-        tk.Button(self, width=8, text= "skip", command=lambda: self.skip())\
+        tk.Button(self, width=8, text= "skip", command=lambda: self.mep.skip())\
             .grid(row=4+row_nb, column=0, pady=15)
         
-        tk.Button(self, width=8, text= "retry", command=lambda: self.retry())\
+        tk.Button(self, width=8, text= "retry", command=lambda: self.mep.retry())\
             .grid(row=4+row_nb, column=1)
         
-        tk.Button(self, width=8, text= "ok", command=lambda: self.update_file(track))\
+        tk.Button(self, width=8, text= "ok", command=lambda: self.mep.update_file(track))\
             .grid(row=4+row_nb, column=2)
 
         
-        self.prev_match_button = tk.Button(self, width=15, text="previous match\n(%d left)"%(self.current_info_nb), command=lambda : self.prev_match())
+        self.prev_match_button = tk.Button(self, width=15, text="previous match\n(%d left)"%(self.mep.current_info_nb), command=lambda : self.mep.prev_match())
         self.prev_match_button.grid(row = 4, column=4, rowspan=2)
-        self.next_match_button = tk.Button(self, width=15, text="next match\n(%d left)"%(self.total_info_nb-self.current_info_nb-1), command=lambda : self.next_match())
+        self.next_match_button = tk.Button(self, width=15, text="next match\n(%d left)"%(self.mep.total_info_nb-self.mep.current_info_nb-1), command=lambda : self.mep.next_match())
         self.next_match_button.grid(row=6, column=4, rowspan=2)
 
         self.update_buttons()
 
     def update_buttons(self) :
-        if self.current_info_nb == 0 :
+        if self.mep.current_info_nb == 0 :
             self.prev_match_button['state'] = "disabled"
-        if self.current_info_nb+1 == self.total_info_nb :
+        if self.mep.current_info_nb+1 == self.mep.total_info_nb :
             self.next_match_button['state'] = "disabled"
 
     # AUTO : keeps user waiting while searching infos
@@ -261,22 +250,22 @@ class Application(tk.Frame):
         frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
         # preparing disp
-        g_nb = len(self.a_good_file)
-        m_nb = len(self.a_maybe_file)
-        n_nb = len(self.a_nothing_file)
+        g_nb = len(self.mep.a_good_file)
+        m_nb = len(self.mep.a_maybe_file)
+        n_nb = len(self.mep.a_nothing_file)
         self.retry_bt = []
         self.tmp_file = []
 
         for i in range(g_nb):
-            self.tmp_file.append(self.a_good_file[i])
+            self.tmp_file.append(self.mep.a_good_file[i])
             self.retry_bt.append(tk.BooleanVar(value=False))
 
         for i in range(m_nb) :
-            self.tmp_file.append(self.a_maybe_file[i])
+            self.tmp_file.append(self.mep.a_maybe_file[i])
             self.retry_bt.append(tk.BooleanVar(value=True))
 
         for i in range(n_nb) :
-            self.tmp_file.append(self.a_nothing_file[i])
+            self.tmp_file.append(self.mep.a_nothing_file[i])
             self.retry_bt.append(tk.BooleanVar(value=True)) 
 
         # Main title 
@@ -292,7 +281,7 @@ class Application(tk.Frame):
 
         # Body
         lst = ["entry_title", "entry_artist", "", "title", "artist", "album"]
-        for i in range(self.total_file_nb) :
+        for i in range(self.mep.total_file_nb) :
             tk.Checkbutton(frame, variable=self.retry_bt[i]).grid(row=3+i,column=0)
             for j in range(6):
                 if j == 2 : 
@@ -300,20 +289,20 @@ class Application(tk.Frame):
                 else :
                     tk.Label(frame, wraplength=150, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
 
-        tk.Button(frame,text="Validate",command=self.prep_reset).grid(row=self.total_file_nb +10, columnspan=7)
+        tk.Button(frame,text="Validate",command=self.mep.prep_reset).grid(row=self.mep.total_file_nb +10, columnspan=7)
 
     # displays ending stats
     def ending_wnd(self) : 
         self.reset_gui()
-        if self.auto and self.treated_file_nb < self.total_file_nb:
+        if self.mep.auto and self.mep.treated_file_nb < self.mep.total_file_nb:
             self.reset_all() # if there are still files untreated
         else :
             tk.Label(self, text="All done !").grid(columnspan=2)
-            tk.Label(self, text="{} files treated out of {} total".format(self.treated_file_nb, self.total_file_nb))\
+            tk.Label(self, text="{} files treated out of {} total".format(self.mep.treated_file_nb, self.mep.total_file_nb))\
                 .grid(row=2,columnspan=2)
 
-            tk.Button(self, text= "End", command=lambda: self.end_all()).grid(row=3, column=0, pady=15)
-            tk.Button(self, text= "Go again", command=lambda: self.reset_all()).grid(row=3, column=1)
+            tk.Button(self, text= "End", command=lambda: self.mep.end_all()).grid(row=3, column=0, pady=15)
+            tk.Button(self, text= "Go again", command=lambda: self.mep.reset_all()).grid(row=3, column=1)
         
     """ -----------------------------------------------
         ------ logger and hook for yt-dl  -------------
