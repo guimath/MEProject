@@ -12,7 +12,7 @@ import logging, inspect
 from slugify import slugify
 
 # moving files 
-import shutil
+import shutil #only uses shutil.move 
 
 # local
 import Interface
@@ -173,6 +173,8 @@ class Mep :
             self.scan_data()
 
     def auto_process(self) :
+        logger.debug("in func : " + inspect.currentframe().f_code.co_name)
+
         # trying to see if there are correct tags
         self.current_file_name = self.file_name[self.file_nb]
         title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
@@ -182,6 +184,7 @@ class Mep :
         self.app.progress_auto.set("file n°"+str(self.file_nb)+" out of "+str(self.total_file_nb))
         self.app.update()
 
+        #preparing search
         if type(title) != type(None):
             title = util.remove_feat(title) 
         else :
@@ -189,12 +192,11 @@ class Mep :
         if type(artist) == type(None) or artist == "None":
             artist = ""      
 
-        # checks wether program already processed file (TODO delete ?)
-        if encoded_by == self.SIGN:
+        if encoded_by == self.SIGN: # TODO useless for auto ?
             if not self.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
                 self.move_file(self.params['folder_name']+os.path.sep+slugify(artist, separator=" ",lowercase=False)+os.path.sep+slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory
 
-         #Search
+        # searching and processing
         items, certain = self.web.get_basic_info(artist, title)
 
         if items :         
@@ -223,12 +225,15 @@ class Mep :
     def prep_reset(self) :
         logger.debug("in func : " + inspect.currentframe().f_code.co_name)
 
+        # removing all checked songs from lst
         nb = 0
         for i in range(self.total_file_nb) :
             if self.app.retry_bt[i].get() :
                 self.app.tmp_file.pop(i-nb)
                 nb +=1
                 self.finished = False
+        
+        # treating files / reset if none are correct
         self.remaining_file_nb = len(self.app.tmp_file)
         self.file_nb = 0
         if self.remaining_file_nb == 0 :
@@ -238,6 +243,7 @@ class Mep :
 
     def prep_next(self) :
         logger.debug("in func : " + inspect.currentframe().f_code.co_name)
+        # preparing for next processing 
         self.current_file_name = self.app.tmp_file[self.file_nb]['file_name']
         track = self.app.tmp_file[self.file_nb]['info']
         tmp = slugify(track['album']['name']+"_artwork")+".jpg"
@@ -250,6 +256,7 @@ class Mep :
         self.current_file_name = self.file_name[self.file_nb]
         title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
 
+        # preparing search
         if type(title) != type(None):
             title = util.remove_feat(title) 
         else :
@@ -303,7 +310,7 @@ class Mep :
 
         # downloading image 
         tmp = slugify(track['album']['name']+"_artwork")+".jpg"
-        if self.current_image_name != tmp :
+        if self.current_image_name != tmp : #checking wether it is same as previous TODO maybe compare urls instead ?
             util.rm_file(self.current_image_name)
             self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
         
@@ -312,44 +319,46 @@ class Mep :
 
     def update_file(self, track) :
         logger.debug("in func : " + inspect.currentframe().f_code.co_name)
+        
+        # preparing new file name and directory path 
+        if track['track_number'] != None :
+            if track['track_number'] < 10 :
+                new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_') 
+            else :
+                new_file_name = str(track['track_number']) + "-" + slugify(track['name'],separator='_')
+        else :
+            new_file_name = slugify(track['name'],separator='_')
+        new_file_name = new_file_name + self.file_extension[self.file_nb]  #adding extension
+        
         try :
             # making sure the file is writable :
             os.chmod(self.current_file_name, 448)
-
-            # preparing new file name and directory path 
-            if track['track_number'] != None :
-                if track['track_number'] < 10 :
-                    new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_') 
-                else :
-                    new_file_name = str(track['track_number']) + "-" + slugify(track['name'],separator='_')
-            else :
-                new_file_name = slugify(track['name'],separator='_')
-            new_file_name = new_file_name + self.file_extension[self.file_nb]  #adding extension
 
             # changing name of the file
             os.path.realpath(self.current_file_name)
             os.rename(self.current_file_name, new_file_name)
             self.current_file_name = new_file_name  
-
-            # adding featured artist to title 
-            nb_artist = len(track['artists'])
-            if nb_artist == 2:
-                track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+")"  # correct title
-            elif nb_artist > 2:
-                track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+ \
-                                                " & "+track['artists'][2]['name']+")"  # correct title
-            
-            # modifying the tags
-            ret = self.tagger.update_tags(self.current_file_name, self.current_image_name, track)
-            
+        
         except FileNotFoundError :
             self.app.warn("File was moved. Skipping file")            
-            self.skip()  # skipping file          
+            self.skip()  # skipping file 
+
         except Exception as e :
             logger.error(e.args)
             self.app.warn("File couldn't be edited. Skipping file") 
             self.skip()  # skipping file 
+            
+        # adding featured artist to title 
+        nb_artist = len(track['artists'])
+        if nb_artist == 2:
+            track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+")"  # correct title
+        elif nb_artist > 2:
+            track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+ \
+                                            " & "+track['artists'][2]['name']+")"  # correct title
         
+        # modifying the tags
+        ret = self.tagger.update_tags(self.current_file_name, self.current_image_name, track)
+            
         if ret > 0 :
             self.app.warn("error during tagging. Skipping file")
             self.skip()
@@ -428,8 +437,6 @@ class Mep :
 def main() :
     mep = Mep()
     mep.start()
-
-    
 
 if __name__ == '__main__':
     log_lvl = logging.INFO
