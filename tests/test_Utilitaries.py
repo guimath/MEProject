@@ -7,6 +7,8 @@ import time
 from Test import * 
 
 from mep import Utilitaries
+
+
 def main() :
     lst =["Bing Crosby",
         "Elton John",
@@ -31,5 +33,50 @@ def main() :
     assert(res=="Bing Crosby = Bing Crosby Elton John = Elton John Mungo Jerry = Mungo Jerry Bill Haley & His Comets = Bill Haley & His Comets Domenico Modugno = Domenico Modugno Whitney Houston = Whitney Houston Elvis Presley = Elvis Presley USA for Africa = USA for Africa The Ink Spots = The Ink Spots Céline Dion = Céline Dion The Beatles = The Beatles John Travolta et Olivia Newton = John Travolta et Olivia Newton Bryan Adams = Bryan Adams ")
     greenp("similar working")
     
+    title = "LOVE. FEAT. Zacari"
+    assert(Utilitaries.remove_feat(title)=="LOVE.")
+    greenp("remove_feat working")
+
+    artist = "The Strokes"  
+    assert(Utilitaries.remove_the(artist)=="Strokes")
+    greenp("remove_the working")
+
+    title = "LOVE."
+    assert(Utilitaries.clean_string(title)=="LOVE")
+    greenp("clean_string working")
+
+
+
+    interface = Interface()
+
+    assert(Utilitaries.create_config())
+    greenp("create_config working")
+
+    config={'feat_acronym': 'feat.', 'default_genre': 'Other', 'folder_name': 'music', 'get_label': True, 'get_bpm': True, 'get_lyrics': True, 'store_image_in_file': True}
+    start = time.time()
+    assert(Utilitaries.update_config(config, interface))
+    end = time.time()
+    greenp(f"update_config working (took {end-start}s)")
+
+    start = time.time()
+    assert(Utilitaries.read_config(interface)==config)
+    end = time.time()
+    greenp(f"read_config working (took {end-start}s)")
+
+    assert(Utilitaries.rm_file('config.json'))
+    greenp("rm_file working")
+
+class Interface :
+    def __init__(self):
+        pass
+    
+    def warn(self, msg):
+        print(msg)
+    
+    def ask(self, msg):
+        print("ask : "+msg) 
+        return True
+    
+
 if __name__ == '__main__':
     main()
