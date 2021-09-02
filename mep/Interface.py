@@ -41,22 +41,33 @@ class Application(tk.Frame):
     def global_start_wnd(self):
         self.reset_gui()
 
-        text = ['Welcome to MEP','Select a mode']
-        button_names = ['Automatically go through a large music library', 'Fill music tags for a few files','Download music from youtube URL', 'Settings']
+        text = [
+            # Title 
+            'Welcome to MEP',
+            # Sub title
+            'Select a mode',
+            # Buttons / modes 
+            'Automatically go through a large music library',
+            'Fill music tags for a few files',
+            'Download music from youtube URL',
+            'Settings',]
 
-        tk.Label(self, text=text[0],font=self.TITLE_FONT).grid(row=0,column=3)
-
+        # Title 
+        tk.Label(self, text=text[0], pady=10, font=self.TITLE_FONT).grid(row=0,column=3)
+        # Sub title
         tk.Label(self, text=text[1],pady=10,font=self.BASIC_FONT).grid(row=1,column=3)
         
-        for i in range(0,len(button_names)-1):
+        for i in range(0,3):
             tk.Label(self, padx=5).grid(row=2,column=2*i)
 
-            #button
-            tk.Button(self, width= 20, wraplength=180, text= button_names[i], command= lambda x=i: self.mep.mode_selection(x),font=self.BASIC_FONT)\
+            # Modes
+            tk.Button(self, width= 20, wraplength=180, text= text[i+2], command= lambda x=i: self.mep.mode_selection(x),font=self.BASIC_FONT)\
                 .grid(row=2, column=2*i+1)
         
+        # Settings button
         tk.Label(self,pady=30).grid(row=3)
-        tk.Button(self, text= button_names[i+1], command= self.settings_wnd,font=self.BASIC_FONT).grid(row=4, column=3)    
+        tk.Button(self, text= text[i+3], command= self.settings_wnd,font=self.BASIC_FONT).grid(row=4, column=3)    
+
 
     # User can see/modify settings
     def settings_wnd(self) :
@@ -77,6 +88,7 @@ class Application(tk.Frame):
             # Button
             'Save']
         
+        # Title
         tk.Label(self, text= text[0],pady=10,font=self.TITLE_FONT).grid(row=0,columnspan=2)
         
         row_nb = 2
@@ -233,7 +245,7 @@ class Application(tk.Frame):
             f'next match\n({self.mep.total_info_nb-self.mep.current_info_nb-1} left)',
             ]       
 
-        # Table title
+        # formating table title
         nb_artist = len(track["artists"])
         if nb_artist == 1:  # no feat
             text[1] = f'{track["name"]} by {track["artists"][0]["name"]}'
@@ -253,8 +265,6 @@ class Application(tk.Frame):
         # Table title 
         tk.Label(self, relief=tab_relief, wraplength=450, text=text[1], height=2, font=self.BOLD_FONT)\
             .grid(row=2,columnspan=3,sticky='nesw')
-      
-        
         
         # infos
         var = [track['album']['name'], track['genre'], track['album']['release_date'], str(track['track_number'])+" out of "+str(track['album']['total_tracks']), track['lyrics']['service']]
@@ -267,8 +277,6 @@ class Application(tk.Frame):
             # Line info
             tk.Label(self, anchor="w", relief=tab_relief, width=info_len, padx=4, wraplength=275, text=var[i], font= self.BASIC_FONT)\
                 .grid(row= i+3,column=1, sticky='ns')
-        
-        
 
         # Album artwork
         imagedata = Image.open(self.mep.current_image_name)
@@ -277,7 +285,7 @@ class Application(tk.Frame):
         tk.Label(self, image=self.imagedata,relief=tab_relief)\
             .grid(row=3,rowspan= row_nb, column=2)
 
-        #different buttons
+        # Different buttons
         tk.Button(self, width=8, text= text[7], command=lambda: self.mep.skip(), font=self.BASIC_FONT)\
             .grid(row=4+row_nb, column=0, pady=15)
         
@@ -287,7 +295,7 @@ class Application(tk.Frame):
         tk.Button(self, width=8, text= text[9], command=lambda: self.mep.update_file(track), font=self.BASIC_FONT)\
             .grid(row=4+row_nb, column=2)
 
-        
+        # Prev and next match
         self.prev_match_button = tk.Button(self, width=15, text=text[10], command=lambda : self.mep.prev_match(), font=self.BASIC_FONT)
         self.prev_match_button.grid(row = 4, column=4, rowspan=2)
         self.next_match_button = tk.Button(self, width=15, text=text[11], command=lambda : self.mep.next_match(), font=self.BASIC_FONT)
