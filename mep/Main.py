@@ -424,6 +424,12 @@ class Mep :
         else:
             self.app.ending_wnd() # Ending program (or restarting)
     
+    def ending(self) :
+        if self.auto and self.treated_file_nb < self.total_file_nb:
+            self.reset_all() # if there are still files untreated
+        else : 
+            self.app.ending_wnd()
+            
     def reset_all(self) :
             # reseting variables
             self.file_extension = [".mp3"]

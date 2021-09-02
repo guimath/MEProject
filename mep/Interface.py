@@ -77,7 +77,7 @@ class Application(tk.Frame):
             # Button
             'Save']
         
-        tk.Label(self, text= text[0],font=self.TITLE_FONT).grid(row=0,columnspan=2)
+        tk.Label(self, text= text[0],pady=10,font=self.TITLE_FONT).grid(row=0,columnspan=2)
         
         row_nb = 2
 
@@ -105,8 +105,9 @@ class Application(tk.Frame):
             self.config[var_name[i]].grid(row=row_nb+i,column=1)
 
         # Button
+        tk.Label(self).grid(row=row_nb+i+1)
         tk.Button(self, padx=20, text = text[8], command= self.mep.update_config, font=self.BASIC_FONT)\
-            .grid(row=row_nb+i+1, columnspan=2)
+            .grid(row=row_nb+i+2, columnspan=2)
     
     # DL : user picks URL
     def get_URL_wnd(self):
@@ -185,23 +186,23 @@ class Application(tk.Frame):
             # Title
             'File : ' + self.mep.current_file_name,
             # Entries desc
-            'title',
-            'artist',
+            'title :',
+            'artist :',
             #Button
             'Go !']       
 
         # Title 
-        tk.Label(self, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=2)
+        tk.Label(self, text=text[0], pady=10, wraplength=400, font=self.BASIC_FONT).grid(columnspan=3)
 
         # entry title
         tk.Label(self, text=text[1],width= 6, font=self.BOLD_FONT).grid(row=1)
-        self.title_ent = tk.Entry(self, width = 30, relief='flat', font=self.BASIC_FONT)
+        self.title_ent = tk.Entry(self, width = 50, relief='flat', font=self.BASIC_FONT)
         self.title_ent.insert(0, title)
         self.title_ent.grid(row=1,column=1)
 
         # entry artist
         tk.Label(self, text=text[2],width= 6, pady = 5, font=self.BOLD_FONT).grid(row=2)
-        self.artist_ent = tk.Entry(self, width = 30, relief='flat', font=self.BASIC_FONT)
+        self.artist_ent = tk.Entry(self, width = 50, relief='flat', font=self.BASIC_FONT)
         self.artist_ent.insert(0, artist)
         self.artist_ent.grid(row=2,column=1)
 
@@ -244,10 +245,10 @@ class Application(tk.Frame):
         row_nb = 5
         tab_relief = "solid"
         desc_len = 13
-        info_len = 25
+        info_len = 30
 
         # Title
-        tk.Label(self, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=3)
+        tk.Label(self, text=text[0], pady=10, wraplength=400, font=self.BASIC_FONT).grid(columnspan=3)
 
         # Table title 
         tk.Label(self, relief=tab_relief, wraplength=450, text=text[1], height=2, font=self.BOLD_FONT)\
@@ -264,8 +265,8 @@ class Application(tk.Frame):
                 .grid(row= i+3,column=0)
 
             # Line info
-            tk.Label(self, anchor="w", relief=tab_relief, height=2, width=info_len, padx=4, wraplength=250, text=var[i], font= self.BASIC_FONT)\
-                .grid(row= i+3,column=1)
+            tk.Label(self, anchor="w", relief=tab_relief, width=info_len, padx=4, wraplength=275, text=var[i], font= self.BASIC_FONT)\
+                .grid(row= i+3,column=1, sticky='ns')
         
         
 
@@ -331,9 +332,10 @@ class Application(tk.Frame):
     def verifications_wnd(self) :
         self.reset_gui()
         self.master.geometry('1000x500')
+
         # making window scrollable :
         def onFrameConfigure(canvas):
-            '''Reset the scroll region to encompass the inner frame'''
+            #Reset the scroll region to encompass the inner frame
             canvas.configure(scrollregion=canvas.bbox("all"))
 
         canvas = tk.Canvas(self, width=950, height=500, borderwidth=0)
@@ -347,13 +349,14 @@ class Application(tk.Frame):
 
         frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
 
-        # preparing disp
+
         g_nb = len(self.mep.a_good_file)
         m_nb = len(self.mep.a_maybe_file)
         n_nb = len(self.mep.a_nothing_file)
         self.retry_bt = []
         self.tmp_file = []
 
+        # getting all files in one lst
         for i in range(g_nb):
             self.tmp_file.append(self.mep.a_good_file[i])
             self.retry_bt.append(tk.BooleanVar(value=False))
@@ -366,41 +369,68 @@ class Application(tk.Frame):
             self.tmp_file.append(self.mep.a_nothing_file[i])
             self.retry_bt.append(tk.BooleanVar(value=True)) 
 
-        # Main title 
-        tk.Label(frame, text="%s file with certain match\n%s file with a potential match\n%s file with no match\n"%(g_nb,m_nb,n_nb)).grid(columnspan=7)
+        text = [
+            # Title
+            f'{g_nb} file with certain match\n{m_nb} file with a potential match\n{n_nb} file with no match\n',
+            # column titles    
+            'Retry?',
+            'Origin title',
+            'Origin artist',
+            '',
+            'Title',
+            'Artist',
+            'Album',
+            #Button
+            'Validate'] 
 
-        #Column titles
-        lst = ["retry?", "origin title","origin artist","", "title", "artist", "album" ]
+        # Title 
+        tk.Label(frame, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=7)
+
+        # Column Titles
         for j in range(7) :
             if j == 3 :
-                tk.Label(frame, text=" ", bg="red").grid(row=2,column=j)
+                tk.Label(frame, text='',bg='red').grid(row=2,column=j,sticky='ns') 
             else :
-                tk.Label(frame, text=lst[j]).grid(row=2,column=j)
+                tk.Label(frame, text=text[j+1], height=2, padx=5, font=self.BOLD_FONT).grid(row=2,column=j, sticky='ew')
 
         # Body
-        lst = ["entry_title", "entry_artist", "", "title", "artist", "album"]
+        var_name = ['entry_title', 'entry_artist', '', 'title', 'artist', 'album']
         for i in range(self.mep.total_file_nb) :
             tk.Checkbutton(frame, variable=self.retry_bt[i]).grid(row=3+i,column=0)
             for j in range(6):
                 if j == 2 : 
-                    tk.Label(frame, text=" ", bg="red").grid(row=3+i,column=j+1)
+                    tk.Label(frame, text='', bg='red').grid(row=3+i,column=j+1,sticky='ns')
                 else :
-                    tk.Label(frame, wraplength=150, text= self.tmp_file[i][lst[j]]).grid(row=3+i, column=j+1)
-
-        tk.Button(frame,text="Validate",command=self.mep.prep_reset).grid(row=self.mep.total_file_nb +10, columnspan=7)
+                    tk.Label(frame, wraplength=150, padx=5, text= self.tmp_file[i][var_name[j]], font=self.BASIC_FONT).grid(row=3+i, column=j+1)
+        
+        tk.Label(frame).grid(row=self.mep.total_file_nb +9)
+        tk.Button(frame,text=text[8],command=self.mep.prep_reset, font=self.BASIC_FONT).grid(row=self.mep.total_file_nb +10, columnspan=7)
 
     # displays ending stats
     def ending_wnd(self) : 
         self.reset_gui()
-        if self.mep.auto and self.mep.treated_file_nb < self.mep.total_file_nb:
-            self.reset_all() # if there are still files untreated
-        else :
-            tk.Label(self, text="All done !").grid(columnspan=2)
-            tk.Label(self, text="{} files treated out of {} total".format(self.mep.treated_file_nb, self.mep.total_file_nb))\
-                .grid(row=2,columnspan=2)
 
-            tk.Button(self, text= "End", command=lambda: self.mep.end_all()).grid(row=3, column=0, pady=15)
-            tk.Button(self, text= "Go again", command=lambda: self.mep.reset_all()).grid(row=3, column=1)
+        text = [
+            # Title
+            'All done !',
+            # Overview
+            f'{self.mep.treated_file_nb} files treated out of {self.mep.total_file_nb} total',
+            # Buttons    
+            'End',
+            'Go again']       
+
+        # Title 
+        tk.Label(self, text=text[0], width= 75, pady=75, font=self.TITLE_FONT).grid(columnspan=4)
+        tk.Label(self, text="",width= 25).grid(row=2,column=0)
+        tk.Label(self, text="",width= 25).grid(row=2,column=3)
+
+        # Overview
+        tk.Label(self, text=text[1],width= 25, pady=25, font=self.BASIC_FONT)\
+            .grid(row=2,column=1,columnspan=2)
+
+        # Buttons
+        tk.Button(self, text= text[2], width= 8, command=lambda: self.mep.end_all(), font=self.BASIC_FONT).grid(row=3, column=1)
+        tk.Button(self, text= text[3], width= 8,  command=lambda: self.mep.reset_all(), font=self.BASIC_FONT).grid(row=3, column=2)
         
 
     """ -----------------------------------------------
