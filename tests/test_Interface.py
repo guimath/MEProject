@@ -3,7 +3,7 @@
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # patch for imports
-os.chdir(os.path.dirname(__file__)) # places in corect dir
+os.chdir(os.path.dirname(__file__)) # places in correct dir
 
 import time 
 from Test import * 
@@ -22,7 +22,7 @@ def main() :
     # dispaly_infos_wnd - verifications_wnd - ending_wnd
     # dl_wnd_0 - dl_wnd_1 - waiting_wnd
 
-    tested = "waiting_wnd" # window to be tested
+    tested = "dispaly_infos_wnd" # window to be tested
     
     if tested == "global_start_wnd":
         interface.global_start_wnd()
@@ -33,7 +33,7 @@ def main() :
     elif tested == "get_URL_wnd":
         interface.get_URL_wnd()
 
-    elif tested == "":
+    elif tested == "prep_search_wnd":
         interface.prep_search_wnd(mep.artist,mep.title)
 
     elif tested == "dispaly_infos_wnd":
@@ -66,12 +66,12 @@ def main() :
 
     elif tested == "waiting_wnd" :
         interface.waiting_wnd()
-        interface.tmp_cf.set("Karma_police.mp3")
-        interface.progress_auto.set("file n°1 out of 3")
+        interface.current_file.set("Karma_police.mp3")
+        interface.progress.set("file n°1 out of 3")
         interface.update()
         time.sleep(2)
-        interface.tmp_cf.set("No_surprises.mp3")
-        interface.progress_auto.set("file n°2 out of 3")
+        interface.current_file.set("No_surprises.mp3")
+        interface.progress.set("file n°2 out of 3")
     #interface.warn("warning")
     #interface.ask("asking")
     
@@ -96,13 +96,14 @@ class Mep :
         self.title = "Karma Police"
 
         self.a_good_file = [{"entry_title":"karma police", "entry_artist":"radiohead", "":"", "title":"Karma Police", "artist":"Radiohead", "album":"OK Computer"}]
+        #self.a_good_file = [{"entry_title":"karma police o o o o o o o o o p", "entry_artist":"radiohead a b d e ezgeg gh hs q qfsf esf sef\n i \n i \n u \n u \n k \n i \n i \n u \n u \n k \n i \n i \n u \n u \n k \n i \n i \n u \n u \n k \n i \n i \n u \n u \n k \n i \n i \n u \n u \n k \n", "":"", "title":"Karma Police p o i h h h g t f hy j y f k", "artist":"Radiohead pio jh h f d de s  g h f d r  f gf d ", "album":"OK Computer o j u hg g f d d s  s s d d "}]
 
         self.a_maybe_file = [{"entry_title":"could it be magic", "entry_artist":"Barry", "":"", "title":"Could it be magic", "artist":"Barry Manilow", "album":"Barry Manilow I"}]
 
         self.a_nothing_file = [{"entry_title":"voodoo", "entry_artist":"THe Jimi Hendrix Experience", "":"", "title":"", "artist":"", "album":""}]
 
         self.track = track = {
-                            'name': 'Karma Police',
+                            'name': 'Karma Police',# Remastered new edition remix updated mixtape 2020 version
                             'track_number': 6,
                             'disc_number': 1,
 
@@ -111,7 +112,7 @@ class Mep :
                             'lyrics': {'text':'Karma Police lyrics', 'service':"Genius"},
 
                             'album' : {
-                                'name': 'OK Computer',
+                                'name': 'OK Computer  ',
                                 'release_date': '1997-05-28',
                                 'total_tracks': 12,
 
@@ -121,6 +122,10 @@ class Mep :
                             'artists': [{
                                 'name': "Radiohead"}]
                             }
+    
+    def mode_selection(self,x):
+        sys.exit("")
+    
     def update_config(self):
         sys.exit("")
     
