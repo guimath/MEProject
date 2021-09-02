@@ -21,7 +21,8 @@ class Application(tk.Frame):
         self.FONT_NAME = "helvetica"
         self.TITLE_FONT = self.FONT_NAME + " 14" 
         self.BASIC_FONT = self.FONT_NAME + " 12"
-        
+        self.BOLD_FONT = self.BASIC_FONT + " bold"
+
     def reset_gui(self):
         for child in self.winfo_children():
             child.destroy()
@@ -138,27 +139,42 @@ class Application(tk.Frame):
     def dl_wnd(self, no_playlist) :
         self.reset_gui()
 
+        text = [
+            # Title
+            'Downloading screen',
+            # Label desc
+            'Playlist :',
+            'Current file :',
+            'State :']
+        
+        place_holders = ['TBD', 'TBD','Starting Process']
+
+        # Title 
+        tk.Label(self,text=text[0],pady = 10,font=self.TITLE_FONT).grid(row=1, columnspan=2)
+
         # create variables that will change during download
-        self.dl_status = tk.StringVar(value="Starting process")  
-        self.current_dl_name = tk.StringVar(value="TBD")
-        self.playlist_name = tk.StringVar(value="TBD")
+        self.playlist_name = tk.StringVar(value=place_holders[0])
+        self.current_dl_name = tk.StringVar(value=place_holders[1])
+        self.dl_status = tk.StringVar(value=place_holders[2])  
 
-        # Common to both 
-        tk.Label(self,text=" Downloading screen\n").grid(row=1, columnspan=2)
-        tk.Label(self, text="State : ", height=2).grid(row=5)
-        tk.Label(self, textvariable=self.dl_status, width=20,anchor="nw").grid(row=5, column=1)
-
-        #specific
+        
         if no_playlist :
-            tk.Label(self, text="Current file :").grid(row=3)
-            tk.Label(self, width=30, anchor="nw", textvariable=self.current_dl_name).grid(row= 3, column=1)
+            # current file
+            tk.Label(self, text=text[2], width=10, height=2, padx=3, anchor='e', font=self.BOLD_FONT).grid(row=3)
+            tk.Label(self, width=30, anchor="w", textvariable=self.current_dl_name, font=self.BASIC_FONT).grid(row= 3, column=1)
 
         else :
-            tk.Label(self, text="Playlist : ").grid(row=3)
-            tk.Label(self, textvariable=self.playlist_name).grid(row=3, column=1)
-            tk.Label(self, text="Current file : ").grid(row=4)
-            tk.Label(self, width=30, anchor="nw", textvariable=self.current_dl_name).grid(row= 4, column=1)
-
+            # playlist
+            tk.Label(self, text=text[1], width=10, height=2, padx=3, anchor='e', font=self.BOLD_FONT).grid(row=3)
+            tk.Label(self, width=30, wraplength= 200, anchor="w", textvariable=self.playlist_name, padx = 3, font=self.BASIC_FONT).grid(row=3, column=1)
+            # current file
+            tk.Label(self, text=text[2], width=10, height=2, padx=3, anchor='e', font=self.BOLD_FONT).grid(row=4)
+            tk.Label(self, width=30, anchor="w", textvariable=self.current_dl_name, padx = 3, font=self.BASIC_FONT).grid(row= 4, column=1)
+        
+        # state
+        tk.Label(self, text=text[3], width=10, height=2, padx=3, anchor='e', font=self.BOLD_FONT).grid(row=5)
+        tk.Label(self, textvariable=self.dl_status, width=30,anchor="w", padx = 3, font = self.BASIC_FONT).grid(row=5, column=1)
+        
         self.update()
 
     # NOT AUTO : user picks artist and title to make search
