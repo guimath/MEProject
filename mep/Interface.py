@@ -180,20 +180,33 @@ class Application(tk.Frame):
     # NOT AUTO : user picks artist and title to make search
     def prep_search_wnd(self, artist, title) :
         self.reset_gui()
-        tk.Label(self, text="file : "+self.mep.current_file_name).grid(columnspan=2)
 
-        tk.Label(self, text="title : ").grid(row=1)
-        tk.Label(self, text="artist : ").grid(row=2)
+        text = [
+            # Title
+            'File : ' + self.mep.current_file_name,
+            # Entries desc
+            'title',
+            'artist',
+            #Button
+            'Go !']       
 
-        self.title_ent = tk.Entry(self, width = 30)
+        # Title 
+        tk.Label(self, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=2)
+
+        # entry title
+        tk.Label(self, text=text[1],width= 6, font=self.BOLD_FONT).grid(row=1)
+        self.title_ent = tk.Entry(self, width = 30, relief='flat', font=self.BASIC_FONT)
         self.title_ent.insert(0, title)
         self.title_ent.grid(row=1,column=1)
-    
-        self.artist_ent = tk.Entry(self, width = 30)
+
+        # entry artist
+        tk.Label(self, text=text[2],width= 6, pady = 5, font=self.BOLD_FONT).grid(row=2)
+        self.artist_ent = tk.Entry(self, width = 30, relief='flat', font=self.BASIC_FONT)
         self.artist_ent.insert(0, artist)
         self.artist_ent.grid(row=2,column=1)
 
-        tk.Button(self, text="Go!",command=lambda: self.mep.make_search())\
+        # Go button
+        tk.Button(self, text=text[3],command=lambda: self.mep.make_search(), font=self.BASIC_FONT)\
             .grid(row=3,columnspan=2)
     
     # NOT AUTO : displays infos for one track
