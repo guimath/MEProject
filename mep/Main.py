@@ -54,6 +54,8 @@ class Mep :
         self.a_nothing_file = []
         self.finished = True    
         
+        self.auto = False
+
          # CONSTANTS params 
         self.NOT_SUPPORTED_EXTENSIONS = [".m4a", ".flac", ".mp4", ".wav", ".wma", ".aac"]
         self.SUPPORTED_EXTENSIONS = [".mp3"]  # list of all accepted extensions
@@ -96,7 +98,11 @@ class Mep :
             self.auto = False
             self.scan_folder()
         elif mode_nb == 2 : 
-            self.app.get_URL_wnd()
+            if not util.find_ffmpeg():
+                self.app.warn("ffmpeg program not found, download is impossible")
+                self.app.global_start_wnd()
+            else :
+                self.app.get_URL_wnd()
 
     def update_config(self):
         logger.debug("in func : " + inspect.currentframe().f_code.co_name)
@@ -159,8 +165,9 @@ class Mep :
         self.total_file_nb = self.remaining_file_nb
 
         if self.total_file_nb <= 0:  # no music file was found
+            self.auto = False 
             self.app.warn("no music file found")
-            self.app.ending_wnd()
+            self.app.global_start_wnd()
 
         elif self.auto :
             self.current_file_name = ""
