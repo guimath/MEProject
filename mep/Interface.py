@@ -213,43 +213,61 @@ class Application(tk.Frame):
     def dispaly_infos_wnd(self,track) :
         self.reset_gui()
 
-        #Params of the tab:
-        lst = [("album",track['album']['name']),
-              ("Genre", track['genre']),
-              ("release date", track['album']['release_date']),
-              ("Track number", str(track['track_number'])+" out of "+str(track['album']['total_tracks'])),
-              ("lyrics", track['lyrics']['service'])]
+        text = [
+            # Title
+            'File : ' + self.mep.current_file_name,
+            # table title
+            '',
+            # desc
+            'Album',
+            'Genre',
+            'Release date',
+            'Track number',
+            'Lyrics',
+            # Buttons
+            'Skip',
+            'Retry',
+            'ok',
+            f'previous match\n({self.mep.current_info_nb} left)',
+            f'next match\n({self.mep.total_info_nb-self.mep.current_info_nb-1} left)',
+            ]       
 
-        row_nb = len(lst)
+        # Table title
+        nb_artist = len(track["artists"])
+        if nb_artist == 1:  # no feat
+            text[1] = f'{track["name"]} by {track["artists"][0]["name"]}'
+        elif nb_artist == 2:
+            text[1] = f'{track["name"]} by {track["artists"][0]["name"]} featuring {track["artists"][1]["name"]}'
+        else:
+            text[1] = f'{track["name"]} by {track["artists"][0]["name"]} featuring {track["artists"][1]["name"]} & {track["artists"][2]["name"]}'
+        
+        row_nb = 5
         tab_relief = "solid"
         desc_len = 13
         info_len = 25
-        # TODO REMOVE title_len = desc_len + info_len + row_nb*5 - 1
 
-        tk.Label(self, text="file : "+self.mep.current_file_name+"\n").grid(columnspan=3)        
+        # Title
+        tk.Label(self, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=3)
+
+        # Table title 
+        tk.Label(self, relief=tab_relief, wraplength=450, text=text[1], height=2, font=self.BOLD_FONT)\
+            .grid(row=2,columnspan=3,sticky='nesw')
+      
         
         
-        # Line title
+        # infos
+        var = [track['album']['name'], track['genre'], track['album']['release_date'], str(track['track_number'])+" out of "+str(track['album']['total_tracks']), track['lyrics']['service']]
+
         for i in range(row_nb):
-            tk.Label(self, anchor=tk.constants.W, relief=tab_relief, height=2, width=desc_len, text=lst[i][0])\
+            # Line title
+            tk.Label(self, anchor="w", relief=tab_relief, height=2, width=desc_len, padx=4, text=text[i+2], font=self.BOLD_FONT)\
                 .grid(row= i+3,column=0)
 
-        # Line info
-        for i in range(row_nb):
-            tk.Label(self, anchor=tk.constants.W, relief=tab_relief, height=2, width=info_len, wraplength=250, text=lst[i][1])\
+            # Line info
+            tk.Label(self, anchor="w", relief=tab_relief, height=2, width=info_len, padx=4, wraplength=250, text=var[i], font= self.BASIC_FONT)\
                 .grid(row= i+3,column=1)
         
-        # Table title
-        nb_artist = len(track['artists'])
-        if nb_artist == 1:  # no feat
-            title = "%s by %s" %(track['name'], track['artists'][0]['name'])
-        elif nb_artist == 2:
-            title = "%s by %s featuring %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'])
-        else:
-            title = "%s by %s featuring %s & %s" %(track['name'], track['artists'][0]['name'], track['artists'][1]['name'], track['artists'][2]['name'])
         
-        tk.Label(self, relief=tab_relief, wraplength=450, text=title)\
-            .grid(row=2,columnspan=3,sticky='nesw')
 
         # Album artwork
         imagedata = Image.open(self.mep.current_image_name)
@@ -259,24 +277,25 @@ class Application(tk.Frame):
             .grid(row=3,rowspan= row_nb, column=2)
 
         #different buttons
-        tk.Button(self, width=8, text= "skip", command=lambda: self.mep.skip())\
+        tk.Button(self, width=8, text= text[7], command=lambda: self.mep.skip(), font=self.BASIC_FONT)\
             .grid(row=4+row_nb, column=0, pady=15)
         
-        tk.Button(self, width=8, text= "retry", command=lambda: self.mep.retry())\
+        tk.Button(self, width=8, text= text[8], command=lambda: self.mep.retry(), font=self.BASIC_FONT)\
             .grid(row=4+row_nb, column=1)
         
-        tk.Button(self, width=8, text= "ok", command=lambda: self.mep.update_file(track))\
+        tk.Button(self, width=8, text= text[9], command=lambda: self.mep.update_file(track), font=self.BASIC_FONT)\
             .grid(row=4+row_nb, column=2)
 
         
-        self.prev_match_button = tk.Button(self, width=15, text="previous match\n(%d left)"%(self.mep.current_info_nb), command=lambda : self.mep.prev_match())
+        self.prev_match_button = tk.Button(self, width=15, text=text[10], command=lambda : self.mep.prev_match(), font=self.BASIC_FONT)
         self.prev_match_button.grid(row = 4, column=4, rowspan=2)
-        self.next_match_button = tk.Button(self, width=15, text="next match\n(%d left)"%(self.mep.total_info_nb-self.mep.current_info_nb-1), command=lambda : self.mep.next_match())
+        self.next_match_button = tk.Button(self, width=15, text=text[11], command=lambda : self.mep.next_match(), font=self.BASIC_FONT)
         self.next_match_button.grid(row=6, column=4, rowspan=2)
 
-        self.update_buttons()
+        self._update_buttons()
 
-    def update_buttons(self) :
+    # De activates buttons if no more matches available
+    def _update_buttons(self) :
         if self.mep.current_info_nb == 0 :
             self.prev_match_button['state'] = "disabled"
         if self.mep.current_info_nb+1 == self.mep.total_info_nb :
@@ -285,12 +304,28 @@ class Application(tk.Frame):
     # AUTO : keeps user waiting while searching infos
     def waiting_wnd(self):
         self.reset_gui()
-        tk.Label(self, text="Going through your files...").grid(columnspan=2)
-        tk.Label(self, text="\nCurrent : \n").grid(row = 1)
-        self.tmp_cf = tk.StringVar(value="")
-        tk.Label(self, textvariable=self.tmp_cf, width= 40, anchor="nw").grid(row = 1, column=1)
-        self.progress_auto = tk.StringVar(value="")
-        tk.Label(self, textvariable=self.progress_auto, width=20).grid(row=3,columnspan=2)
+
+        text = [
+            # Title
+            'Going through your files...',
+            # Label
+            'Progress :',
+            'File name :',
+            ]       
+
+        # Title 
+        tk.Label(self, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=2)
+
+        self.current_file = tk.StringVar(value="")
+        self.progress = tk.StringVar(value="")
+
+        # Progress
+        tk.Label(self, text=text[1], width=10,wraplength=100, anchor='e',font=self.BOLD_FONT).grid(row = 1)
+        tk.Label(self, textvariable=self.progress, width=40,anchor="w", font=self.BASIC_FONT).grid(row=1,column=1)
+
+        # File name
+        tk.Label(self, text=text[2], width=10,height=2, anchor='e',font=self.BOLD_FONT).grid(row = 2)
+        tk.Label(self, textvariable=self.current_file, width= 40, anchor="w", font=self.BASIC_FONT).grid(row = 2, column=1) #
 
     # AUTO : user checks the infos
     def verifications_wnd(self) :

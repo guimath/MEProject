@@ -189,8 +189,8 @@ class Mep :
         title, artist, album, encoded_by = self.tagger.read_tags(self.current_file_name)
         
         #updating progress 
-        self.app.tmp_cf.set(self.current_file_name)
-        self.app.progress_auto.set("file n°"+str(self.file_nb)+" out of "+str(self.total_file_nb))
+        self.app.current_file.set(self.current_file_name)
+        self.app.progress.set("file n°"+str(self.file_nb)+" out of "+str(self.total_file_nb))
         self.app.update()
 
         #preparing search
