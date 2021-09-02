@@ -207,3 +207,25 @@ def rm_file(file_name):
         return True
     except :
         return False
+
+
+def find_ffmpeg():
+    def is_exe(prg):
+        return os.path.isfile(prg) and os.access(prg, os.X_OK)
+
+    #if exec in folder :
+    if os.path.exists("ffmpeg/ffmpeg") and os.path.exists("ffmpeg/ffprobe") :
+        return "./ffmpeg"
+    
+    #else tries to see if exec exists
+    if os.path.split("ffmpeg")[0]:
+        if is_exe("ffmpeg") :
+            return "ffmpeg"
+          
+    else:
+        for path in os.environ["PATH"].split(os.pathsep):
+            exe_file = os.path.join(path, "ffmpeg")
+            if is_exe(exe_file) :
+                return exe_file
+
+    return False
