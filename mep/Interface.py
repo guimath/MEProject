@@ -3,6 +3,7 @@ import os
 # GUI
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import font
 from PIL import Image, ImageTk
 
 class Application(tk.Frame):
@@ -110,13 +111,28 @@ class Application(tk.Frame):
     def get_URL_wnd(self):
         self.reset_gui()
 
+        text = [
+            # Title 
+            'Enter URL',
+            # Checkbox desc
+            'Whole playlist ?',
+            # Button
+            'Download']
+
+        # Title 
+        tk.Label(self, text= text[0], pady= 10,font=self.TITLE_FONT).grid()
+
+        # Checkbox
         self.playlist = tk.BooleanVar()
-        tk.Checkbutton(self, text='Whole playlist ?',var= self.playlist).grid(row = 0)
+        tk.Checkbutton(self, text=text[1],var= self.playlist, font=self.BASIC_FONT).grid(row = 1)
         
-        self.input_url = tk.Entry(self,width=60)
-        self.input_url.grid(row = 1)
+        # Entry
+        self.input_url = tk.Entry(self,width=60, font=self.BASIC_FONT)
+        self.input_url.grid(row = 2)
         self.input_url.focus()
-        tk.Button(self, text= "Download", command= self.mep.download).grid(row = 2)
+        
+        # Button
+        tk.Button(self, text= text[2], command= self.mep.download, font=self.BASIC_FONT).grid(row = 3)
 
     # DL : keeps user informed about the download process
     def dl_wnd(self, no_playlist) :
