@@ -16,7 +16,10 @@ class Application(tk.Frame):
         self.master.geometry('800x500')
         self.master.title("MEProject")
         self.grid()
-        self.auto = False
+
+        self.FONT_NAME = "helvetica"
+        self.TITLE_FONT = self.FONT_NAME + " 14" 
+        self.BASIC_FONT = self.FONT_NAME + " 12"
         
     def reset_gui(self):
         for child in self.winfo_children():
@@ -35,49 +38,73 @@ class Application(tk.Frame):
     # Start screen (User picks a mode)
     def global_start_wnd(self):
         self.reset_gui()
-        #TODO Re do 
-        tk.Label(self, text="Select a mode\n").grid(row=0,columnspan=4)
 
-        mode_names = ['Automatically go through a\nlarge music library', 'fill music tags for a few\nfiles','download music\nfrom youtube URL']
-        for i in range(0,len(mode_names)):
-            tk.Button(self, text= mode_names[i], command= lambda x=i: self.mep.mode_selection(x)).grid(row=1, column=i)
+        text = ['Welcome to MEP','Select a mode']
+        button_names = ['Automatically go through a large music library', 'Fill music tags for a few files','Download music from youtube URL', 'Settings']
+
+        tk.Label(self, text=text[0],font=self.TITLE_FONT).grid(row=0,column=3)
+
+        tk.Label(self, text=text[1],pady=10,font=self.BASIC_FONT).grid(row=1,column=3)
         
-        tk.Label(self).grid(row=2)
-        tk.Button(self, text= "settings", command= self.settings_wnd).grid(row=3, column=1)    
+        for i in range(0,len(button_names)-1):
+            tk.Label(self, padx=5).grid(row=2,column=2*i)
+
+            #button
+            tk.Button(self, width= 20, wraplength=180, text= button_names[i], command= lambda x=i: self.mep.mode_selection(x),font=self.BASIC_FONT)\
+                .grid(row=2, column=2*i+1)
+        
+        tk.Label(self,pady=30).grid(row=3)
+        tk.Button(self, text= button_names[i+1], command= self.settings_wnd,font=self.BASIC_FONT).grid(row=4, column=3)    
 
     # User can see/modify settings
     def settings_wnd(self) :
         self.reset_gui()
-        tk.Label(self, text= "Settings").grid(row=0,columnspan=2)
+
+        text = [
+            # Title
+            'Settings', 
+            # Checkboxes desc
+            'search for the artist label', # 
+            'search for the bpm',
+            'search for the lyrics (can slow the program slightly)',
+            'include image in file (if unchecked image will just be placed within the album folder)',
+            # Entries desc
+            'folder name (can be a simple name or a path)',
+            'featuring acronym',
+            'default genre',
+            # Button
+            'Save']
+        
+        tk.Label(self, text= text[0],font=self.TITLE_FONT).grid(row=0,columnspan=2)
+        
         row_nb = 2
 
         # Checkbox
-        lst = ["get_label", "get_bpm","get_lyrics", "store_image_in_file"]
+        var_name = ["get_label", "get_bpm","get_lyrics", "store_image_in_file"]
         self.config = {}
-        for key in lst :
+        for key in var_name :
             self.config[key] = tk.BooleanVar(value=self.mep.params[key])
 
-        lst = [["get_label", "search for the artist label"],
-               ["get_bpm","search for the bpm"],
-               ["get_lyrics","search for the lyrics (can slow the program slightly)"],
-               ["store_image_in_file","include image in file (if unchecked image will just be placed within the album folder)"]]
-        for i in range(len(lst)) :
-            tk.Checkbutton(self, anchor="nw", width=70, text=lst[i][1],var= self.config[lst[i][0]]).grid(row = row_nb+i,columnspan=2)
+        for i in range(len(var_name)) :
+            tk.Checkbutton(self, anchor="nw", width=70, text=text[i+1],var= self.config[var_name[i]],font=self.BASIC_FONT)\
+                .grid(row = row_nb,columnspan=2)
+            row_nb +=1
         
         # Spacing
-        row_nb += i + 2
+        row_nb += 2
         tk.Label(self, text="").grid(row=row_nb-1)
         
         # Entries
-        lst = [["folder_name", "folder name (can be a simple name or a path)"],["feat_acronym", "featuring acronym"], ["default_genre", "default genre"]]
-        for i in range(len(lst)) :
-            tk.Label(self, width= 40, anchor="nw", text=" " + lst[i][1]).grid(row=row_nb+i)
-            self.config[lst[i][0]] = tk.Entry(self, width = 30)
-            self.config[lst[i][0]].insert(0, self.mep.params[lst[i][0]])
-            self.config[lst[i][0]].grid(row=row_nb+i,column=1)
+        var_name = ["folder_name", "feat_acronym", "default_genre"]
+        for i in range(len(var_name)) :
+            tk.Label(self, width= 40, anchor="nw", text= text[i+3], pady=2,font=self.BASIC_FONT).grid(row=row_nb+i)
+            self.config[var_name[i]] = tk.Entry(self, width = 30, relief='flat', font=self.BASIC_FONT)
+            self.config[var_name[i]].insert(0, self.mep.params[var_name[i]])
+            self.config[var_name[i]].grid(row=row_nb+i,column=1)
 
         # Button
-        tk.Button(self, padx=20, text = "Save", command= self.mep.update_config).grid(row=row_nb+i+1, columnspan=2)
+        tk.Button(self, padx=20, text = text[8], command= self.mep.update_config, font=self.BASIC_FONT)\
+            .grid(row=row_nb+i+1, columnspan=2)
     
     # DL : user picks URL
     def get_URL_wnd(self):
