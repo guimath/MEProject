@@ -17,13 +17,16 @@ def main() :
     mep = Mep()
     root = tk.Tk()
     interface = Interface.Application(logger,mep,root)
-    
+    mep.interface = interface
     # global_start_wnd - settings_wnd - prep_search_wnd - get_URL_wnd
     # dispaly_infos_wnd - verifications_wnd - ending_wnd
     # dl_wnd_0 - dl_wnd_1 - waiting_wnd
 
-    tested = "dispaly_infos_wnd" # window to be tested
-    
+    mep.tested = "waiting_wnd" # window to be tested
+    launch_wnd(mep.tested, interface, mep)
+
+def launch_wnd(tested, interface, mep) :
+
     if tested == "global_start_wnd":
         interface.global_start_wnd()
 
@@ -86,6 +89,10 @@ class Mep :
         self.treated_file_nb = 0
         self.remaining_file_nb = 2
         self.total_file_nb = 3
+        self.tested = ""
+        self.nb = 0
+
+        self.TESTS = ['global_start_wnd', 'settings_wnd', 'prep_search_wnd', 'get_URL_wnd', 'dispaly_infos_wnd', 'verifications_wnd', 'ending_wnd','dl_wnd_0', 'dl_wnd_1', 'waiting_wnd']
         
         self.current_info_nb = 0
         self.total_info_nb = 1
@@ -123,35 +130,40 @@ class Mep :
                                 'name': "Radiohead"}]
                             }
     
+    
+    def next_wnd(self) :
+        self.nb +=1
+        launch_wnd(self.TESTS[self.nb],self.interface, self)
+
     def mode_selection(self,x):
-        sys.exit("")
+        self.next_wnd()
     
     def update_config(self):
-        sys.exit("")
+        self.next_wnd()
     
     def download(self):
-        sys.exit("")
+        self.next_wnd()
 
     def make_search(self):
-        sys.exit("")
+        self.next_wnd()
     
     def skip(self):
-        sys.exit("")
+        self.next_wnd()
 
     def retry(self):
-        sys.exit("")
+        self.next_wnd()
 
-    def update_file(self):
-        sys.exit("")
+    def update_file(self, trck):
+        self.next_wnd()
 
     def prep_reset(self):
-        sys.exit("")
+        self.next_wnd()
 
     def end_all(self):
-        sys.exit("")
+        self.next_wnd()
 
     def reset_all(self):
-        sys.exit("") 
+        self.next_wnd()
         
 
 
