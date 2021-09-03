@@ -4,6 +4,7 @@ import os
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import font
+from tkinter.constants import MULTIPLE
 from PIL import Image, ImageTk
 
 class Application(tk.Frame):
@@ -18,10 +19,20 @@ class Application(tk.Frame):
         self.master.title("MEProject")
         self.grid()
 
-        self.FONT_NAME = "helvetica"
-        self.TITLE_FONT = self.FONT_NAME + " 14" 
-        self.BASIC_FONT = self.FONT_NAME + " 12"
-        self.BOLD_FONT = self.BASIC_FONT + " bold"
+
+
+        TITLE_FONT_NAME = "helvetica"
+        TITLE_FONT_SIZE = 14
+
+        BASIC_FONT_NAME = "helvetica"
+        BASIC_FONT_SIZE = 12
+
+        self.TITLE_FONT = tk.font.Font(family=TITLE_FONT_NAME, size=TITLE_FONT_SIZE, weight="normal")
+        self.BASIC_FONT = tk.font.Font(family=BASIC_FONT_NAME, size=BASIC_FONT_SIZE, weight="normal")
+        self.BOLD_FONT = tk.font.Font(family=BASIC_FONT_NAME, size=BASIC_FONT_SIZE, weight="bold")
+
+        self.MULTIPLIER = int(self.BASIC_FONT.measure("0")) # to calculate the wrap needed
+        self.BACK_BUTTON_NAME = "back"
 
     def reset_gui(self):
         for child in self.winfo_children():
@@ -57,11 +68,12 @@ class Application(tk.Frame):
         # Sub title
         tk.Label(self, text=text[1],pady=10,font=self.BASIC_FONT).grid(row=1,column=3)
         
+ 
         for i in range(0,3):
             tk.Label(self, padx=5).grid(row=2,column=2*i)
 
             # Modes
-            tk.Button(self, width= 20, wraplength=180, text= text[i+2], command= lambda x=i: self.mep.mode_selection(x),font=self.BASIC_FONT)\
+            tk.Button(self, width= 20, wraplength=20*self.MULTIPLIER, text= text[i+2], command= lambda x=i: self.mep.mode_selection(x),font=self.BASIC_FONT)\
                 .grid(row=2, column=2*i+1)
         
         # Settings button
@@ -89,8 +101,8 @@ class Application(tk.Frame):
             'Save']
         
         # Title
-        tk.Label(self, text= text[0],pady=10,font=self.TITLE_FONT).grid(row=0,columnspan=2)
-        
+        tk.Label(self, text= text[0],pady=10,font=self.TITLE_FONT).grid(columnspan=2)
+        tk.Button(self, text=self.BACK_BUTTON_NAME,command=self.global_start_wnd, font=self.BASIC_FONT).grid(row=0,column=2)
         row_nb = 2
 
         # Checkbox
@@ -111,7 +123,7 @@ class Application(tk.Frame):
         # Entries
         var_name = ["folder_name", "feat_acronym", "default_genre"]
         for i in range(len(var_name)) :
-            tk.Label(self, width= 40, anchor="nw", text= text[i+3], pady=2,font=self.BASIC_FONT).grid(row=row_nb+i)
+            tk.Label(self, width= 40, anchor="nw", text= text[i+5], pady=2,font=self.BASIC_FONT).grid(row=row_nb+i)
             self.config[var_name[i]] = tk.Entry(self, width = 30, relief='flat', font=self.BASIC_FONT)
             self.config[var_name[i]].insert(0, self.mep.params[var_name[i]])
             self.config[var_name[i]].grid(row=row_nb+i,column=1)
@@ -135,6 +147,8 @@ class Application(tk.Frame):
 
         # Title 
         tk.Label(self, text= text[0], pady= 10,font=self.TITLE_FONT).grid()
+        tk.Button(self, text=self.BACK_BUTTON_NAME,command=self.global_start_wnd, font=self.BASIC_FONT).grid(row=0,column=1)
+
 
         # Checkbox
         self.playlist = tk.BooleanVar()
@@ -179,7 +193,7 @@ class Application(tk.Frame):
         else :
             # playlist
             tk.Label(self, text=text[1], width=10, height=2, padx=3, anchor='e', font=self.BOLD_FONT).grid(row=3)
-            tk.Label(self, width=30, wraplength= 200, anchor="w", textvariable=self.playlist_name, padx = 3, font=self.BASIC_FONT).grid(row=3, column=1)
+            tk.Label(self, width=30, wraplength= 30*self.MULTIPLIER, anchor="w", textvariable=self.playlist_name, padx = 3, font=self.BASIC_FONT).grid(row=3, column=1)
             # current file
             tk.Label(self, text=text[2], width=10, height=2, padx=3, anchor='e', font=self.BOLD_FONT).grid(row=4)
             tk.Label(self, width=30, anchor="w", textvariable=self.current_dl_name, padx = 3, font=self.BASIC_FONT).grid(row= 4, column=1)
@@ -204,7 +218,8 @@ class Application(tk.Frame):
             'Go !']       
 
         # Title 
-        tk.Label(self, text=text[0], pady=10, wraplength=400, font=self.BASIC_FONT).grid(columnspan=3)
+        tk.Label(self, text=text[0], pady=10, wraplength=56*self.MULTIPLIER, font=self.BASIC_FONT).grid(columnspan=3)
+        tk.Button(self, text=self.BACK_BUTTON_NAME,command=self.global_start_wnd, font=self.BASIC_FONT).grid(row=0,column=3)
 
         # entry title
         tk.Label(self, text=text[1],width= 6, font=self.BOLD_FONT).grid(row=1)
@@ -258,12 +273,12 @@ class Application(tk.Frame):
         tab_relief = "solid"
         desc_len = 13
         info_len = 30
-
+        title_wrp = (desc_len + info_len)*self.MULTIPLIER + row_nb*37+2
         # Title
-        tk.Label(self, text=text[0], pady=10, wraplength=400, font=self.BASIC_FONT).grid(columnspan=3)
+        tk.Label(self, text=text[0], pady=10, wraplength=title_wrp, font=self.BASIC_FONT).grid(columnspan=3)
 
         # Table title 
-        tk.Label(self, relief=tab_relief, wraplength=450, text=text[1], height=2, font=self.BOLD_FONT)\
+        tk.Label(self, relief=tab_relief, wraplength=title_wrp, text=text[1], height=2, font=self.BOLD_FONT)\
             .grid(row=2,columnspan=3,sticky='nesw')
         
         # infos
@@ -275,7 +290,7 @@ class Application(tk.Frame):
                 .grid(row= i+3,column=0)
 
             # Line info
-            tk.Label(self, anchor="w", relief=tab_relief, width=info_len, padx=4, wraplength=275, text=var[i], font= self.BASIC_FONT)\
+            tk.Label(self, anchor="w", relief=tab_relief, width=info_len, padx=4, wraplength=info_len*self.MULTIPLIER, text=var[i], font= self.BASIC_FONT)\
                 .grid(row= i+3,column=1, sticky='ns')
 
         # Album artwork
@@ -324,12 +339,13 @@ class Application(tk.Frame):
 
         # Title 
         tk.Label(self, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=2)
+        tk.Button(self, text=self.BACK_BUTTON_NAME,command=self.global_start_wnd, font=self.BASIC_FONT).grid(row=0,column=2)
 
         self.current_file = tk.StringVar(value="")
         self.progress = tk.StringVar(value="")
 
         # Progress
-        tk.Label(self, text=text[1], width=10,wraplength=100, anchor='e',font=self.BOLD_FONT).grid(row = 1)
+        tk.Label(self, text=text[1], width=10,wraplength=10*self.MULTIPLIER, anchor='e',font=self.BOLD_FONT).grid(row = 1)
         tk.Label(self, textvariable=self.progress, width=40,anchor="w", font=self.BASIC_FONT).grid(row=1,column=1)
 
         # File name
