@@ -121,15 +121,30 @@ class Mep :
         self.current_image_name = ""
         self.app.prep_search_wnd(self.a_t[0], self.a_t[1])
 
-    def download(self) :
+    def prep_download(self) :
         logger.debug("in func : " + inspect.currentframe().f_code.co_name)
         # getting info
-        url=self.app.input_url.get()
+        self.current_url=self.app.input_url.get()
         no_playlist = not self.app.playlist.get()
-        
+  
+        if no_playlist :
+           self.download(no_playlist = True)
+        else :
+            lst, playlist_name = dls.check_out_playlist(self.current_url)
+            self.app.select_dls_wnd(lst, playlist_name)
+    
+    def read_selection(self):
+        ind_dls = ''
+        for i in range(len(self.app.vids_lst)):
+            
+            if self.app.dl_bt[i].get():
+                ind_dls+=str(i+1)+','
+        self.download(no_playlist=False, lst=ind_dls[:-1])
+
+    def download(self, no_playlist, lst= None):
         self.app.dl_wnd(no_playlist) # making window
-        self.yt_logger = self.app.dl_logger(self.app)        
-        success = dls.dl_music(url,no_playlist,self.yt_logger,[self.app.dl_hook])
+        yt_logger = self.app.dl_logger(self.app) 
+        success = dls.dl_music(self.current_url,no_playlist, yt_logger,[self.app.dl_hook],lst)
         if not success : 
             if self.app.ask("Downloading failed, retry ?") :
                 self.app.get_URL_wnd()
