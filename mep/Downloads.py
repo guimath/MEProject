@@ -1,6 +1,7 @@
 import os
 import requests #(uses only requests.get)
 import shutil # (uses only shutil.copyfileobj)
+import json
 
 import youtube_dl 
 
@@ -36,7 +37,7 @@ def dl_image(file_url, filename, interface):
 
 """ Downloading mp3 file from specified urlS
 """        
-def dl_music(url,no_playlist,logger, hook):
+def dl_music(url,no_playlist,logger, hook, lst=None):
     ydl_opts = {
     'format': 'bestaudio/best',
     'noplaylist': no_playlist,
@@ -54,9 +55,10 @@ def dl_music(url,no_playlist,logger, hook):
 
     if os.path.exists("ffmpeg") :
         ydl_opts['ffmpeg_location'] = './ffmpeg'
-
+    
+    if lst :
+        ydl_opts['playlist_items'] = lst
    
-
     try :     
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
@@ -66,3 +68,41 @@ def dl_music(url,no_playlist,logger, hook):
         return False
 
     
+def check_out_playlist(url):
+    class Interface :
+        def __init__(self):
+            self.videos = {}
+        
+        def debug(self, msg):
+            if '{"_type": ' in msg :
+                j = json.loads(msg)
+                self.videos = j['entries']
+            if '[download] Downloading playlist:' in msg :
+                self.playlist_name = msg.replace('[download] Downloading playlist: ','')
+
+        def warning(self, msg):
+            pass
+        def error(self,msg):
+            print(f'Error during yt-dl : {msg}')
+    
+    interface = Interface()
+    
+    ydl_opts = {
+        'dump_single_json' : True,
+        'extract_flat':'in_playlist',
+        'playlistend': 50,
+        'logger': interface,
+        }
+
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+    
+    res = []
+    for video in interface.videos :
+        secs = int(video['duration']%60)
+        mins = int((video['duration'] - secs)/60)
+        duration = f'{mins}min {secs}s'
+        #print(video)
+        res.append({'title': video['title'],'uploader':video['uploader'], 'duration':duration, 'id':len(res)})
+    
+    return res, interface.playlist_name
