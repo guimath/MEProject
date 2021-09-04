@@ -48,6 +48,9 @@ def launch_wnd(tested, interface, mep) :
     elif tested == "ending_wnd":
         interface.ending_wnd()
 
+    elif tested == "select_dls_wnd":
+        interface.select_dls_wnd(mep.lst, "Playlist name here")
+        
     elif tested == "dl_wnd_0": #DL WINDOW w/ NO PLAYLIST
         interface.dl_wnd(True)
         interface.dl_status.set("Downloading...\n84%")
@@ -130,7 +133,7 @@ class Mep :
                                 'name': "Radiohead"}]
                             }
     
-    
+        self.lst = [{'title': 'Joji - SLOW DANCING IN THE DARK', 'uploader': '88rising', 'duration': '3min 38s', 'id': 0}, {'title': 'Childish Gambino - Feels Like Summer', 'uploader': 'Donald Glover', 'duration': '4min 46s', 'id': 1}, {'title': 'FKJ & Masego - Tadow', 'uploader': 'Fkj', 'duration': '8min 7s', 'id': 2}, {'title': 'Childish Gambino - Redbone (Official Audio)', 'uploader': 'Donald Glover', 'duration': '5min 27s', 'id': 3}, {'title': 'The Weeknd - Call Out My Name (Official Video)', 'uploader': 'The Weeknd', 'duration': '3min 59s', 'id': 4}, {'title': 'Jorja Smith - Be Honest (feat. Burna Boy)', 'uploader': 'Jorja Smith', 'duration': '4min 21s', 'id': 5}, {'title': 'Daniel Caesar - Get You ft. Kali Uchis [Official Video]', 'uploader': 'Daniel Caesar', 'duration': '4min 31s', 'id': 6}, {'title': 'Giveon - Like I Want You (Official Music Video)', 'uploader': 'Givēon', 'duration': '5min 5s', 'id': 7}, {'title': 'The Weeknd - I Feel It Coming ft. Daft Punk (Official Video)', 'uploader': 'The Weeknd', 'duration': '4min 58s', 'id': 8}, {'title': 'Khalid - Better (Official Video)', 'uploader': 'Khalid', 'duration': '4min 11s', 'id': 9}, {'title': "Alicia Keys & John Mayer - If I ain't got you - Gravity (Better audio quality)", 'uploader': 'didjital vibe', 'duration': '9min 15s', 'id': 10}, {'title': 'Michael Kiwanuka - Cold Little Heart (Official Video)', 'uploader': 'Michael Kiwanuka', 'duration': '6min 20s', 'id': 11}, {'title': 'Amy Winehouse - Back To Black', 'uploader': 'Amy Winehouse', 'duration': '4min 8s', 'id': 12}]
     def next_wnd(self) :
         self.nb +=1
         launch_wnd(self.TESTS[self.nb],self.interface, self)
