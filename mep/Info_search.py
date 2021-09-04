@@ -1,4 +1,4 @@
-import requests # get web pages
+import requests, urllib # get web pages
 import re # get all pages corresponding 
 import codecs # to decode text
 
@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup  # crawler
 # for spotify api
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+from random import choice as random_choice
 
 import mep.Utilities as util
 
@@ -21,6 +22,12 @@ class Info_search:
 
         # Spotify api authorization Secret codes (DO NOT COPY / SHARE)
         self.sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(client_id="fb69ab85a5c749e08713458e85754515",                                                        client_secret= "ebe33b7ed0cd495a8e91bc4032e9edf2")) 
+
+        self.HEADERS = [{'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36 OPR/78.0.4093.184'},
+                        {'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'},
+                        {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0'}]
+
+        self.PROXIES = urllib.request.getproxies()
 
     """ gets basic infos from web
         @return items dict containing multiple tracks """
@@ -41,7 +48,7 @@ class Info_search:
         if self.params['get_lyrics'] :
             (track['lyrics']['text'], track['lyrics']['service']) = self.get_lyrics(track['artists'][0]['name'], track['name'])
         else :
-            track['lyrics']['service'] = "ignored"
+            track['lyrics']['service'] = ""
             track['lyrics']['text'] =  ""
 
         track['info']['full'] = True
@@ -138,16 +145,21 @@ class Info_search:
         return track 
     
     def _scrap(self, url):
+        header = random_choice(self.HEADERS)
+
         try :
-            headers = {"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0"}
-            text = requests.get(url, headers).text
-            bs = BeautifulSoup(text, 'html.parser')
+            response = requests.get(url, headers=header, proxies=self.PROXIES) 
+            
+            if response.status_code == 200:
+
+                return BeautifulSoup(response.text, 'html.parser')
+            else :
+                print(f'Request error during lyrics search ({url=}), {response.status_code = } \n {response.text = }')
+                return False
         except Exception as error:
             print(f'error during lyrics search ({url=}) : {error}')
             return False
-        return bs
-
-
+    
     def _musixmatch(self, artist, title):
         url = "https://www.musixmatch.com/search/%s-%s/tracks" % (artist, title)
         #print(f'musixmatch : {url=}')
@@ -156,7 +168,6 @@ class Info_search:
             scripts = soup_page.find_all("script")
             props_script = None
             for script in scripts:
-                print(script.content)
                 if script and script.contents and "__mxmProps" in script.contents[0]:
                     props_script = script
                     return props_script.contents[0]
@@ -169,7 +180,7 @@ class Info_search:
                 page = re.findall('"track_share_url":"([^"]*)', props)
                 if page:
                     url = codecs.decode(page[0], 'unicode-escape')
-                    print(f'musixmatch : {url=}')
+                    #print(f'musixmatch : {url=}')
                     soup = self._scrap(url)
                     if soup :
                         props = _extract_mxm_props(soup)
@@ -180,7 +191,7 @@ class Info_search:
                             if lyrics.strip():
                                 return lyrics
         
-        return False 
+        return False
 
     def _genius(self, artist, title):
         artist = slugify(artist)
@@ -219,6 +230,7 @@ class Info_search:
         
         return False
    
+
     def _lyrics_ovh(self, artist, title):
         url = "https://api.lyrics.ovh/v1/%s/%s" % (artist, title)
         #print(f'lyricsOVH : {url=}')
