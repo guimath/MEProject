@@ -19,7 +19,7 @@ import shutil #(only uses shutil.move)
 # local
 import Interface
 import Downloads as dls
-import Utilitaries as util
+import Utilities as util
 from Tagger import Tagger
 from Info_search import Info_search
 

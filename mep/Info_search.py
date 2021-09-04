@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup  # crawler
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
-import mep.Utilitaries as util
+import mep.Utilities as util
 
 # ~ Class responsible of all web searches (tags like album, genre etc as well as lyrics) ~ #
 

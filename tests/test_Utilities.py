@@ -8,7 +8,7 @@ os.chdir(os.path.dirname(__file__)) # places in corect dir
 import time 
 from Test import * 
 
-from mep import Utilitaries
+from mep import Utilities
 
 
 def main() :
@@ -27,45 +27,45 @@ def main() :
         "Bryan Adams"]
     res = ""
 
-    headp("Testing Utilitaries")
+    headp("Testing Utilities")
     for a in lst :
         for b in lst :
-            if  Utilitaries.similar(a,b) :
+            if  Utilities.similar(a,b) :
                 res+=(f'{a} = {b} ')
     assert(res=="Bing Crosby = Bing Crosby Elton John = Elton John Mungo Jerry = Mungo Jerry Bill Haley & His Comets = Bill Haley & His Comets Domenico Modugno = Domenico Modugno Whitney Houston = Whitney Houston Elvis Presley = Elvis Presley USA for Africa = USA for Africa The Ink Spots = The Ink Spots Céline Dion = Céline Dion The Beatles = The Beatles John Travolta et Olivia Newton = John Travolta et Olivia Newton Bryan Adams = Bryan Adams ")
     greenp("similar working")
     
     title = "LOVE. FEAT. Zacari"
-    assert(Utilitaries.remove_feat(title)=="LOVE.")
+    assert(Utilities.remove_feat(title)=="LOVE.")
     greenp("remove_feat working")
 
     artist = "The Strokes"  
-    assert(Utilitaries.remove_the(artist)=="Strokes")
+    assert(Utilities.remove_the(artist)=="Strokes")
     greenp("remove_the working")
 
     title = "LOVE."
-    assert(Utilitaries.clean_string(title)=="LOVE")
+    assert(Utilities.clean_string(title)=="LOVE")
     greenp("clean_string working")
 
 
 
     interface = Interface()
 
-    assert(Utilitaries.create_config())
+    assert(Utilities.create_config())
     greenp("create_config working")
 
     config={'feat_acronym': 'feat.', 'default_genre': 'Other', 'folder_name': 'music', 'get_label': True, 'get_bpm': True, 'get_lyrics': True, 'store_image_in_file': True}
     start = time.time()
-    assert(Utilitaries.update_config(config, interface))
+    assert(Utilities.update_config(config, interface))
     end = time.time()
     greenp(f"update_config working (took {end-start}s)")
 
     start = time.time()
-    assert(Utilitaries.read_config(interface)==config)
+    assert(Utilities.read_config(interface)==config)
     end = time.time()
     greenp(f"read_config working (took {end-start}s)")
 
-    assert(Utilitaries.rm_file('config.json'))
+    assert(Utilities.rm_file('config.json'))
     greenp("rm_file working")
 
 class Interface :

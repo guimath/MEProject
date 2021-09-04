@@ -8,13 +8,13 @@ os.chdir(os.path.dirname(__file__)) # places in correct dir
 import time 
 from Test import * 
 
-import test_Downloads, test_Info_search, test_Tagger, test_Utilitaries
+import test_Downloads, test_Info_search, test_Tagger, test_Utilities
 
 def main() :
     test_Downloads.main()
     test_Info_search.main()
     test_Tagger.main()
-    test_Utilitaries.main()
+    test_Utilities.main()
 
 if __name__ == '__main__':
     main()
