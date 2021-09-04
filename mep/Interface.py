@@ -171,6 +171,15 @@ class Application(tk.Frame):
             #Reset the scroll region to encompass the inner frame
             canvas.configure(scrollregion=canvas.bbox("all"))
 
+        def _on_mousewheel(event,canvas):
+            # linux / Window / Mac
+            if event.num == 5 or event.delta == -120 or event.delta == -1:
+                count = 1
+            if event.num == 4 or event.delta == 120 or event.delta == 1:
+                count = -1  
+
+            canvas.yview_scroll(int(count), "units")
+
         canvas = tk.Canvas(self, width=780, height=500, borderwidth=0)
         frame = tk.Frame(canvas, width=780, height=500)
         vsb = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
@@ -181,6 +190,11 @@ class Application(tk.Frame):
         canvas.create_window((4,4), window=frame, anchor="nw")
 
         frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+        # Win/Mac Mousewheel
+        self.bind_all("<MouseWheel>", lambda event, canvas=canvas : _on_mousewheel(event, canvas))
+        # Linux Button 4 and 5
+        self.bind_all("<Button-4>", lambda event, canvas=canvas : _on_mousewheel(event, canvas))
+        self.bind_all("<Button-5>", lambda event, canvas=canvas : _on_mousewheel(event, canvas))
 
         vids_nb = len(lst)
         self.vids_lst = lst
@@ -416,6 +430,15 @@ class Application(tk.Frame):
             #Reset the scroll region to encompass the inner frame
             canvas.configure(scrollregion=canvas.bbox("all"))
 
+        def _on_mousewheel(event,canvas):
+            # linux / Window / Mac
+            if event.num == 5 or event.delta == -120 or event.delta == -1:
+                count = 1
+            if event.num == 4 or event.delta == 120 or event.delta == 1:
+                count = -1  
+
+            canvas.yview_scroll(int(count), "units")
+
         canvas = tk.Canvas(self, width=950, height=500, borderwidth=0)
         frame = tk.Frame(canvas, width=950, height=500)
         vsb = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
@@ -426,7 +449,11 @@ class Application(tk.Frame):
         canvas.create_window((4,4), window=frame, anchor="nw")
 
         frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
-
+        # Win/Mac Mousewheel
+        self.bind_all("<MouseWheel>", lambda event, canvas=canvas : _on_mousewheel(event, canvas))
+        # Linux Button 4 and 5
+        self.bind_all("<Button-4>", lambda event, canvas=canvas : _on_mousewheel(event, canvas))
+        self.bind_all("<Button-5>", lambda event, canvas=canvas : _on_mousewheel(event, canvas))
 
         g_nb = len(self.mep.a_good_file)
         m_nb = len(self.mep.a_maybe_file)
