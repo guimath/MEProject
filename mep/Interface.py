@@ -287,7 +287,7 @@ class Application(tk.Frame):
         for i in range(row_nb):
             # Line title
             tk.Label(self, anchor="w", relief=tab_relief, height=2, width=desc_len, padx=4, text=text[i+2], font=self.BOLD_FONT)\
-                .grid(row= i+3,column=0)
+                .grid(row= i+3,column=0, sticky='ns')
 
             # Line info
             tk.Label(self, anchor="w", relief=tab_relief, width=info_len, padx=4, wraplength=info_len*self.MULTIPLIER, text=var[i], font= self.BASIC_FONT)\
