@@ -22,7 +22,7 @@ def main() :
     # dispaly_infos_wnd - verifications_wnd - ending_wnd
     # dl_wnd_0 - dl_wnd_1 - waiting_wnd
 
-    mep.tested = "waiting_wnd" # window to be tested
+    mep.tested = "global_start_wnd" # window to be tested
     launch_wnd(mep.tested, interface, mep)
 
 def launch_wnd(tested, interface, mep) :
