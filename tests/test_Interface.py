@@ -143,7 +143,10 @@ class Mep :
     
     def update_config(self):
         self.next_wnd()
-    
+
+    def read_selection(self):
+        self.next_wnd()
+
     def download(self):
         self.next_wnd()
 
