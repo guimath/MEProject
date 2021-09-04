@@ -160,7 +160,61 @@ class Application(tk.Frame):
         self.input_url.focus()
         
         # Button
-        tk.Button(self, text= text[2], command= self.mep.download, font=self.BASIC_FONT).grid(row = 3)
+        tk.Button(self, text= text[2], command= self.mep.prep_download, font=self.BASIC_FONT).grid(row = 3)
+
+    # DL : allows user to select videos to download
+    def select_dls_wnd(self,lst, playlist_name):
+        self.reset_gui()
+
+        # making window scrollable :
+        def onFrameConfigure(canvas):
+            #Reset the scroll region to encompass the inner frame
+            canvas.configure(scrollregion=canvas.bbox("all"))
+
+        canvas = tk.Canvas(self, width=780, height=500, borderwidth=0)
+        frame = tk.Frame(canvas, width=780, height=500)
+        vsb = tk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vsb.set)
+
+        vsb.grid(row=0, column=1, sticky = "ns")
+        canvas.grid(row=0, column=0)
+        canvas.create_window((4,4), window=frame, anchor="nw")
+
+        frame.bind("<Configure>", lambda event, canvas=canvas: onFrameConfigure(canvas))
+
+        vids_nb = len(lst)
+        self.vids_lst = lst
+        text = [
+            # Title
+            f'{vids_nb} videos in playlist : {playlist_name}',
+            # column titles    
+            'Download?',
+            'Title',
+            'Uploader',
+            'Duration',
+
+            #Button
+            'Validate'] 
+
+        # Title 
+        tk.Label(frame, text=text[0], pady=10, font=self.TITLE_FONT).grid(columnspan=7)
+
+        # Column Titles
+        for j in range(4) :
+            tk.Label(frame, text=text[j+1], height=2, padx=5, font=self.BOLD_FONT).grid(row=2,column=j, sticky='ew')
+
+        # Body
+        var_name = ['title', 'uploader', 'duration']
+        self.dl_bt = []
+        for i in range(vids_nb) :
+            self.dl_bt.append(tk.BooleanVar(value=True))
+            tk.Checkbutton(frame, variable=self.dl_bt[i],width=2,height=2).grid(row=3+i,column=0)
+            for j in range(3):
+                tk.Label(frame, wraplength=300, padx=5, text= lst[i][var_name[j]], font=self.BASIC_FONT).grid(row=3+i, column=j+1)
+        
+        tk.Label(frame).grid(row=vids_nb +9)
+        tk.Button(frame,text=text[5],command=self.mep.read_selection, font=self.BASIC_FONT).grid(row=vids_nb +10, columnspan=7)
+
 
     # DL : keeps user informed about the download process
     def dl_wnd(self, no_playlist) :
