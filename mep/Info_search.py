@@ -1,6 +1,7 @@
 import requests, urllib # get web pages
 import re # get all pages corresponding 
 import codecs # to decode text
+import time
 
 from slugify import slugify # TODO replace with util slugify
 
@@ -28,6 +29,7 @@ class Info_search:
                         {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:59.0) Gecko/20100101 Firefox/59.0'}]
 
         self.PROXIES = urllib.request.getproxies()
+        self.retry = False
 
     """ gets basic infos from web
         @return items dict containing multiple tracks """
@@ -151,13 +153,21 @@ class Info_search:
             response = requests.get(url, headers=header, proxies=self.PROXIES) 
             
             if response.status_code == 200:
-
+                self.retry = False
                 return BeautifulSoup(response.text, 'html.parser')
+
+            elif response.status_code == 503 and not self.retry : # server overload
+                time.sleep(0.2)
+                print("waiting")
+                self.retry = True
+                return self._scrap(url) 
             else :
-                print(f'Request error during lyrics search ({url=}), {response.status_code = } \n {response.text = }')
+                print(f'Request error during lyrics search ({url=}), {response.status_code = } \nType : {response.headers["content-type"]}')
+                self.retry = False
                 return False
         except Exception as error:
             print(f'error during lyrics search ({url=}) : {error}')
+            self.retry = False
             return False
     
     def _musixmatch(self, artist, title):
