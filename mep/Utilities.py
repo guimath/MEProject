@@ -213,18 +213,26 @@ def find_ffmpeg():
     def is_exe(prg):
         return os.path.isfile(prg) and os.access(prg, os.X_OK)
 
+    # just for windows
+    if os.name == 'nt' :
+        ffmpeg_name = 'ffmpeg.exe'
+        ffprobe_name = 'ffprobe.exe'
+    else :
+        ffmpeg_name = 'ffmpeg'
+        ffprobe_name = 'ffprobe'
+
     #if exec in folder :
-    if os.path.exists("ffmpeg/ffmpeg") and os.path.exists("ffmpeg/ffprobe") :
-        return "./ffmpeg"
+    if os.path.exists("ffmpeg/"+ffmpeg_name) and os.path.exists("ffmpeg/"+ffprobe_name) :
+        return "./"+ffmpeg_name
     
     #else tries to see if exec exists
     if os.path.split("ffmpeg")[0]:
-        if is_exe("ffmpeg") :
-            return "ffmpeg"
+        if is_exe(ffmpeg_name) :
+            return ffmpeg_name
           
     else:
         for path in os.environ["PATH"].split(os.pathsep):
-            exe_file = os.path.join(path, "ffmpeg")
+            exe_file = os.path.join(path, ffmpeg_name)
             if is_exe(exe_file) :
                 return exe_file
 
