@@ -3,8 +3,6 @@ import re # get all pages corresponding
 import codecs # to decode text
 import time
 
-from slugify import slugify # TODO replace with util slugify
-
 from bs4 import BeautifulSoup  # crawler
 
 # for spotify api
@@ -204,8 +202,8 @@ class Info_search:
         return False
 
     def _genius(self, artist, title):
-        artist = slugify(artist)
-        title = slugify(title)
+        artist = util.slugify(artist)
+        title = util.slugify(title)
         url = "http://genius.com/%s-%s-lyrics" % (artist,title)
         #print(f'genius : {url=}')
         
@@ -219,8 +217,8 @@ class Info_search:
         return False
 
     def _az_lyrics(self, artist, title):
-        artist = util.remove_the(slugify(artist,separator=""))
-        title = slugify(title,separator="")
+        artist = util.remove_the(util.slugify(artist,separator=""))
+        title = util.slugify(title,separator="")
         url = "https://www.azlyrics.com/lyrics/%s/%s.html" % (artist,title) 
         #print(f'azlyrics : {url=}')
 

@@ -10,9 +10,6 @@ import tkinter as tk
 #logging
 import logging, inspect
 
-# formating strings
-from slugify import slugify # TODO replace with util slugify
-
 # moving files 
 import shutil #(only uses shutil.move) 
 
@@ -218,7 +215,7 @@ class Mep :
 
         if encoded_by == self.SIGN: # TODO useless for auto ?
             if not self.app.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
-                self.move_file(self.params['folder_name']+os.path.sep+slugify(artist, separator=" ",lowercase=False)+os.path.sep+slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory
+                self.move_file(self.params['folder_name']+os.path.sep+util.slugify(artist, separator=" ",lowercase=False)+os.path.sep+util.slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory
 
         # searching and processing
         items, certain = self.web.get_basic_info(artist, title)
@@ -270,7 +267,7 @@ class Mep :
         # preparing for next processing 
         self.current_file_name = self.app.tmp_file[self.file_nb]['file_name']
         track = self.app.tmp_file[self.file_nb]['info']
-        tmp = slugify(track['album']['name']+"_artwork")+".jpg"
+        tmp = util.slugify(track['album']['name']+"_artwork")+".jpg"
         self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
         self.update_file(track)
 
@@ -291,7 +288,7 @@ class Mep :
         # checks wether program already processed file 
         if encoded_by == self.SIGN:
             if not self.app.ask(" file : " + self.current_file_name + " has already been treated. Do you want to change something ?") :
-                self.move_file(self.params['folder_name']+os.path.sep+slugify(artist, separator=" ",lowercase=False)+os.path.sep+slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory 
+                self.move_file(self.params['folder_name']+os.path.sep+util.slugify(artist, separator=" ",lowercase=False)+os.path.sep+util.slugify(album, separator=" ",lowercase=False))  # just moving the file in correct directory 
         
         self.app.prep_search_wnd(artist, title)
 
@@ -333,7 +330,7 @@ class Mep :
             track = self.web.get_advanced_info(track)
 
         # downloading image 
-        tmp = slugify(track['album']['name']+"_artwork")+".jpg"
+        tmp = util.slugify(track['album']['name']+"_artwork")+".jpg"
         if self.current_image_name != tmp : #checking wether it is same as previous TODO maybe compare urls instead ?
             util.rm_file(self.current_image_name)
             self.current_image_name = dls.dl_image(track['album']['artwork'], tmp, self)
@@ -347,11 +344,11 @@ class Mep :
         # preparing new file name and directory path 
         if track['track_number'] != None :
             if track['track_number'] < 10 :
-                new_file_name = "0" + str(track['track_number']) + "-" + slugify(track['name'],separator='_') 
+                new_file_name = "0" + str(track['track_number']) + "-" + util.slugify(track['name'],separator='_') 
             else :
-                new_file_name = str(track['track_number']) + "-" + slugify(track['name'],separator='_')
+                new_file_name = str(track['track_number']) + "-" + util.slugify(track['name'],separator='_')
         else :
-            new_file_name = slugify(track['name'],separator='_')
+            new_file_name = util.slugify(track['name'],separator='_')
         new_file_name = new_file_name + self.file_extension[self.file_nb]  #adding extension
         
         try :
@@ -375,10 +372,9 @@ class Mep :
         # adding featured artist to title 
         nb_artist = len(track['artists'])
         if nb_artist == 2:
-            track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+")"  # correct title
+            track["name"] = f'{track["name"]} ({self.params["feat_acronym"]} {track["artists"][1]["name"]})' 
         elif nb_artist > 2:
-            track['name'] = track['name']+" ("+self.params['feat_acronym']+" "+track['artists'][1]['name']+ \
-                                            " & "+track['artists'][2]['name']+")"  # correct title
+            track["name"] = f'{track["name"]} ({self.params["feat_acronym"]} {track["artists"][1]["name"]} & {track["artists"][2]["name"]})' 
         
         # modifying the tags
         ret = self.tagger.update_tags(self.current_file_name, self.current_image_name, track)
@@ -387,7 +383,11 @@ class Mep :
             self.app.warn("error during tagging. Skipping file")
             self.skip()
         else :
-            self.move_file(self.params['folder_name']+os.path.sep+slugify(track['artists'][0]['name'], separator=" ",lowercase=False)+os.path.sep+slugify(track['album']['name'], separator=" ",lowercase=False))
+            self.move_file(self.params['folder_name']+\
+                            os.path.sep+\
+                            util.slugify(track['artists'][0]['name'], separator=" ",lowercase=False)+\
+                            os.path.sep+\
+                            util.slugify(track['album']['name'], separator=" ",lowercase=False))
             
 
     def move_file(self, direction) :
@@ -399,11 +399,14 @@ class Mep :
             else :
                 if not os.path.exists(direction):
                     os.makedirs(direction) #creating folder
-
-                shutil.move(self.current_file_name, direction) # place music file in correct folder
+                
+                # place music file in correct folder
+                shutil.move(self.current_file_name, direction) 
+                
                 if not self.params['store_image_in_file'] :
                     if not os.path.exists(direction+os.path.sep+self.current_image_name) :
-                        shutil.move(self.current_image_name,direction) #place album cover in correct folder
+                        #place album cover in correct folder
+                        shutil.move(self.current_image_name,direction) 
                     else :
                         os.remove(self.current_image_name) #removing if already present
 
