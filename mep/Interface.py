@@ -256,7 +256,7 @@ class Application(tk.Frame):
         if no_playlist :
             # current file
             tk.Label(self, text=text[2], width=10, height=2, padx=3, anchor='e', font=self.BOLD_FONT).grid(row=3)
-            tk.Label(self, width=30, anchor="w", textvariable=self.current_dl_name, font=self.BASIC_FONT).grid(row= 3, column=1)
+            tk.Label(self, width=30, wraplength=30*self.MULTIPLIER, anchor="w", textvariable=self.current_dl_name, font=self.BASIC_FONT).grid(row= 3, column=1)
 
         else :
             # playlist
