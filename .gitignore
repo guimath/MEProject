@@ -30,4 +30,4 @@ MANIFEST
 *.mp3
 *.flac
 *.jpg
-Music_editor/config.json
+*.json
